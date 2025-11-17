@@ -1,0 +1,35 @@
+Package: qboost
+Type: Package
+Title: Quantile Regression with Gradient Boosting Machines
+Version: 2.3.2.9000
+Author: Cassio Pagnoncelli <cassiopagnoncelli@gmail.com>
+Maintainer: Cassio Pagnoncelli <cassiopagnoncelli@gmail.com>
+Authors@R:
+    person("Cassio", "Pagnoncelli", , "cassiopagnoncelli@gmail.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0009-0000-7114-7008"))
+Description: A quantile regression framework using gradient boosting machines.
+License: file LICENSE
+Encoding: UTF-8
+LazyData: true
+Depends:
+    R (>= 4.4.0)
+Imports: 
+    magrittr (>= 2.0.3),
+    tibble,
+    dplyr,
+    tidyr,
+    stringr,
+    purrr,
+    ggplot2,
+    lubridate,
+    lightgbm,
+    xgboost
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Suggests: 
+    testthat (>= 3.0.0),
+    withr (>= 3.0.0),
+    cyclocomp,
+    MASS,
+    skimr
+Config/testthat/edition: 3

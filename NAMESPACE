@@ -1,0 +1,30 @@
+export(constants)
+exportPattern("^[[:alpha:]]+")
+
+importFrom("magrittr", `%>%`)
+
+# Libraries.
+import("R6")
+
+# Data frames
+import("dplyr")
+import("tibble")
+
+importFrom("dplyr", `slice`)
+importFrom("dplyr", `row_number`)
+
+# Data manipulation
+import("RcppRoll")
+import("zoo")
+
+# Data wrangling
+import("tidyr")
+import("stringr")
+# import("purrr")
+
+# Dates
+import("lubridate")
+
+# Charts: ggplot2, ggfortify, MASS
+import("ggplot2")
+importFrom("MASS", `truehist`)
