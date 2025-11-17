@@ -1,30 +1,15 @@
-export(constants)
-exportPattern("^[[:alpha:]]+")
-
-importFrom("magrittr", `%>%`)
-
-# Libraries.
-import("R6")
-
-# Data frames
-import("dplyr")
-import("tibble")
-
-importFrom("dplyr", `slice`)
-importFrom("dplyr", `row_number`)
-
-# Data manipulation
-import("RcppRoll")
-import("zoo")
-
-# Data wrangling
-import("tidyr")
-import("stringr")
-# import("purrr")
-
-# Dates
-import("lubridate")
-
-# Charts: ggplot2, ggfortify, MASS
-import("ggplot2")
-importFrom("MASS", `truehist`)
+export(qboost)
+export(predict.qboost)
+export(plot.qboost)
+export(summary.qboost)
+export(coef.qboost)
+export(importance.qboost)
+S3method(predict,qboost)
+S3method(plot,qboost)
+S3method(summary,qboost)
+S3method(print,qboost_summary)
+S3method(coef,qboost)
+import(lightgbm)
+import(ggplot2)
+import(stats)
+import(methods)

@@ -1,0 +1,82 @@
+---
+title: "qboost: Quantile Gradient Boosting"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{qboost-intro}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4.5
+)
+```
+
+## Overview
+
+`qboost` wraps LightGBM's quantile regression with a small, consistent API. It
+offers `predict()`, `plot()`, `summary()`, cross-validation, and feature
+importance without exposing the underlying booster details.
+
+## Fit a model
+
+```{r}
+library(qboost)
+set.seed(1)
+
+n <- 200
+x <- data.frame(
+  x1 = rnorm(n),
+  x2 = runif(n)
+)
+y <- 0.5 * x$x1 - 0.2 * x$x2 + rnorm(n, sd = 0.8)
+
+fit <- qboost(
+  x = x,
+  y = y,
+  tau = 0.3,
+  nrounds = 200,
+  nfolds = 5,
+  early_stopping_rounds = 20
+)
+```
+
+## Predict new values
+
+```{r}
+newdata <- head(x, 5)
+predict(fit, newdata)
+```
+
+## Inspect diagnostics
+
+The plotting method returns a list of ggplot objects; set `plot = TRUE` to
+display them immediately.
+
+```{r, fig.width=7, fig.height=4}
+plots <- plot(fit, plot = FALSE)
+plots$pinball
+```
+
+```{r, fig.width=7, fig.height=4}
+plots$calibration
+```
+
+## Summarise the model
+
+```{r}
+summary(fit)
+```
+
+## Feature importance
+
+```{r}
+importance.qboost(fit)
+```
+
+The `Gain` column highlights the features contributing most to the fitted
+quantile estimates.
