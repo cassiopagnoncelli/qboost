@@ -17,6 +17,9 @@ install:
 		--library=$$(Rscript -e 'cat(.libPaths()[1])') \
 		qboost_*.tar.gz
 
+packages: build
+	@mv qboost_*.tar.gz ../research/packages/
+
 clean:
 	@if [ -e qboost_*.tar.gz ]; then \
 		rm -v qboost_*.tar.gz; \
