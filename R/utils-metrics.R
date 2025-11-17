@@ -104,18 +104,30 @@ tail_spread_metric <- function(truth, estimate) {
 #' @return List with total leaves and average leaves per tree.
 #' @keywords internal
 leaf_stats <- function(model) {
-  dump <- tryCatch(lightgbm::lgb.dump(model, num_iteration = NULL), error = function(e) NULL)
-  tree_info <- model$dump_model()$tree_info %||% list()
+  info <- tryCatch(model$dump_model(), error = function(e) NULL)
+  tree_info <- if (is.list(info) && !is.null(info$tree_info)) info$tree_info else list()
 
-  if (!is.null(dump) && length(dump) > 0) {
-    # fallback to dump_model structure
-    leaves <- vapply(tree_info, function(t) t$num_leaves %||% length(t$leaf_value %||% list()), numeric(1))
+  leaves <- if (length(tree_info) > 0) {
+    vapply(
+      tree_info,
+      function(t) {
+        if (is.list(t) && !is.null(t$num_leaves)) {
+          t$num_leaves
+        } else if (is.list(t) && !is.null(t$leaf_value)) {
+          length(t$leaf_value)
+        } else {
+          NA_real_
+        }
+      },
+      numeric(1)
+    )
   } else {
-    leaves <- vapply(tree_info, function(t) t$num_leaves %||% length(t$leaf_value %||% list()), numeric(1))
+    numeric(0)
   }
 
-  total <- sum(leaves)
-  avg <- if (length(leaves) > 0) mean(leaves) else NA_real_
+  leaves_clean <- leaves[!is.na(leaves)]
+  total <- if (length(leaves_clean) > 0) sum(leaves_clean) else NA_real_
+  avg <- if (length(leaves_clean) > 0) mean(leaves_clean) else NA_real_
 
   list(
     total_leaves = total,
