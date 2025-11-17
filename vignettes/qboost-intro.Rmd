@@ -18,9 +18,9 @@ knitr::opts_chunk$set(
 
 ## Overview
 
-`qboost` wraps LightGBM's quantile regression with a small, consistent API. It
-offers `predict()`, `plot()`, `summary()`, cross-validation, and feature
-importance without exposing the underlying booster details.
+`qboost` wraps LightGBM quantile regression in a simple, tidy API. It offers
+cross-validation, automatic best-iteration selection, calibrated diagnostics,
+and publication-ready plots.
 
 ## Fit a model
 
@@ -52,10 +52,7 @@ newdata <- head(x, 5)
 predict(fit, newdata)
 ```
 
-## Inspect diagnostics
-
-The plotting method returns a list of ggplot objects; set `plot = TRUE` to
-display them immediately.
+## Diagnostics and plots
 
 ```{r, fig.width=7, fig.height=4}
 plots <- plot(fit, plot = FALSE)
@@ -66,11 +63,15 @@ plots$pinball
 plots$calibration
 ```
 
-## Summarise the model
+## Summary and calibration
 
 ```{r}
 summary(fit)
 ```
+
+`coverage` is the fraction of responses below the predicted quantile boundary;
+`QCE` is its absolute deviation from the target `tau`. Pseudo-R² compares model
+pinball loss to a constant-quantile baseline.
 
 ## Feature importance
 
@@ -78,5 +79,5 @@ summary(fit)
 importance.qboost(fit)
 ```
 
-The `Gain` column highlights the features contributing most to the fitted
-quantile estimates.
+Use the `gain` column to interpret which variables contribute most to the fitted
+quantile surface.

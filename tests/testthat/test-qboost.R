@@ -60,3 +60,15 @@ testthat::test_that("importance returns a data frame", {
   testthat::expect_s3_class(df, "data.frame")
   testthat::expect_true(nrow(df) >= 0)
 })
+
+testthat::test_that("minimal data still fits", {
+  testthat::skip_on_cran()
+  testthat::skip_if_not_installed("lightgbm")
+
+  set.seed(42)
+  x <- matrix(rnorm(20), ncol = 2)
+  y <- rnorm(10)
+  fit <- qboost(x, y, tau = 0.5, nrounds = 5, nfolds = 2, early_stopping_rounds = 2)
+
+  testthat::expect_s3_class(fit, "qboost")
+})

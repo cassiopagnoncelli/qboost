@@ -4,13 +4,13 @@
 #' @return A `ggplot` object.
 #' @keywords internal
 plot_pinball_loss <- function(df) {
-  ggplot2::ggplot(df, ggplot2::aes(x = residual, y = loss)) +
+  ggplot2::ggplot(df, ggplot2::aes(x = predicted, y = residual)) +
     ggplot2::geom_point(alpha = 0.6, color = "#1f78b4") +
     ggplot2::geom_smooth(method = "loess", se = FALSE, color = "#b2df8a") +
     ggplot2::labs(
-      title = "Pinball loss vs residuals",
-      x = "Residual (y - yhat)",
-      y = "Pinball loss"
+      title = "Pinball residuals",
+      x = "Predicted quantile",
+      y = "Residual (y - yhat)"
     ) +
     ggplot2::theme_minimal()
 }
@@ -52,19 +52,21 @@ plot_calibration_curve <- function(df) {
 
 #' Feature importance plot
 #'
-#' @param df Data frame returned by `lightgbm::lgb.importance()`.
+#' @param df Data frame returned by `importance.qboost()`.
+#' @param top_n Maximum number of features to display.
 #' @return A `ggplot` object.
 #' @keywords internal
-plot_feature_importance <- function(df) {
+plot_feature_importance <- function(df, top_n = 25) {
   if (is.null(df) || nrow(df) == 0) {
     return(ggplot2::ggplot() +
              ggplot2::labs(title = "No feature importance available") +
              ggplot2::theme_void())
   }
 
-  df$Feature <- stats::reorder(df$Feature, df$Gain)
+  df <- utils::head(df, top_n)
+  df$feature <- stats::reorder(df$feature, df$gain)
 
-  ggplot2::ggplot(df, ggplot2::aes(x = Feature, y = Gain)) +
+  ggplot2::ggplot(df, ggplot2::aes(x = feature, y = gain)) +
     ggplot2::geom_col(fill = "#33a02c") +
     ggplot2::coord_flip() +
     ggplot2::labs(

@@ -30,7 +30,7 @@ plot.qboost <- function(x, plot = TRUE, ...) {
     pinball = plot_pinball_loss(pin_df),
     qq = plot_qq_quantiles(qq_df),
     calibration = plot_calibration_curve(calib_df),
-    importance = plot_feature_importance(imp_df)
+    importance = plot_feature_importance(imp_df, ...)
   )
 
   if (isTRUE(plot)) {

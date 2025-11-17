@@ -1,23 +1,25 @@
 Package: qboost
 Type: Package
 Title: Quantile Gradient Boosting Models in R
-Version: 2.3.2.9000
+Version: 0.1.0
 Author: Cassio Pagnoncelli <cassiopagnoncelli@gmail.com>
 Maintainer: Cassio Pagnoncelli <cassiopagnoncelli@gmail.com>
 Authors@R:
     person("Cassio", "Pagnoncelli", , "cassiopagnoncelli@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0009-0000-7114-7008"))
-Description: Clean high-level API for quantile regression via LightGBM, providing predict(), plot(), summary(), CV, importance, and diagnostics.
-License: file LICENSE
+Description: High-level quantile regression using LightGBM with clean S3 API, diagnostics, calibration analysis, plots, and model summaries.
+License: MIT
 Encoding: UTF-8
 LazyData: true
 Depends:
-    R (>= 4.4.0)
+    R (>= 4.1.0)
 Imports:
     lightgbm,
     ggplot2,
     stats,
-    methods
+    methods,
+    tibble,
+    dplyr
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Suggests:

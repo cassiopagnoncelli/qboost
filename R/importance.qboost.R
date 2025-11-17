@@ -3,11 +3,11 @@
 #' @param object A fitted `qboost` model.
 #' @param ... Additional arguments passed to `lightgbm::lgb.importance()`.
 #'
-#' @return A data frame of feature importances.
+#' @return A tibble of feature importances with columns `feature`, `gain`, `cover`, `freq`.
 #' @export
 importance.qboost <- function(object, ...) {
   if (!inherits(object, "qboost")) {
     stop("`object` must be a qboost model.", call. = FALSE)
   }
-  lightgbm::lgb.importance(object$model, ...)
+  tidy_importance(object$model, ...)
 }

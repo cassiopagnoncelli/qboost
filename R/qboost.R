@@ -1,17 +1,18 @@
 #' Fit a LightGBM quantile regression model
 #'
-#' Provides a clean, `lm`-like interface for fitting quantile regression trees
-#' with LightGBM cross-validation and automatic best-iteration selection.
+#' Provides a clean, `lm`-style interface for quantile regression using LightGBM.
+#' Cross-validates to find the best iteration, refits on full data, and computes
+#' rich diagnostics and calibration metrics.
 #'
 #' @param x A matrix or data.frame of predictors.
 #' @param y Numeric response vector.
 #' @param tau Target quantile in (0, 1].
-#' @param nrounds Maximum number of boosting rounds passed to LightGBM.
-#' @param nfolds Number of CV folds.
-#' @param params Optional named list of additional LightGBM parameters.
-#' @param early_stopping_rounds Early stopping patience used inside `lgb.cv()`.
-#' @param seed Seed for reproducibility.
-#' @param ... Additional arguments forwarded to `lightgbm::lgb.cv()` and `lightgbm::lgb.train()`.
+#' @param nrounds Maximum number of boosting iterations.
+#' @param nfolds Number of cross-validation folds.
+#' @param params Optional named list of extra LightGBM parameters.
+#' @param early_stopping_rounds Early stopping patience in CV.
+#' @param seed Random seed for reproducibility.
+#' @param ... Additional arguments forwarded to `lightgbm::lgb.cv()` / `lgb.train()`.
 #'
 #' @return An object of class `qboost`.
 #' @export
@@ -79,19 +80,17 @@ qboost <- function(
     ...
   )
 
-  fitted <- predict(final_model, x)
+  fitted <- stats::predict(final_model, x)
 
-  metrics <- compute_qboost_metrics(
+  train_metrics <- compute_qboost_metrics(
     y = y,
     yhat = fitted,
     tau = tau,
-    cv_result = cv
+    cv_result = cv,
+    model = final_model
   )
 
-  importance_df <- tryCatch(
-    lightgbm::lgb.importance(final_model),
-    error = function(e) data.frame()
-  )
+  importance_df <- tidy_importance(final_model)
 
   end_time <- Sys.time()
 
@@ -99,14 +98,17 @@ qboost <- function(
     model = final_model,
     tau = tau,
     best_iter = best_iter,
+    metrics = train_metrics$metrics,
+    calibration = train_metrics$calibration,
+    tails = train_metrics$tails,
+    complexity = train_metrics$complexity,
     importance = importance_df,
-    metrics = metrics,
-    params_used = params_full,
     timings = list(
       start = start_time,
       end = end_time,
       elapsed = as.numeric(difftime(end_time, start_time, units = "secs"))
     ),
+    params_used = params_full,
     training = list(
       y = y,
       fitted = fitted
