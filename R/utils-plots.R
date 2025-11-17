@@ -63,6 +63,7 @@ plot_feature_importance <- function(df, top_n = 25) {
              ggplot2::theme_void())
   }
 
+  df <- df[order(-df$gain), , drop = FALSE]
   df <- utils::head(df, top_n)
   df$feature <- stats::reorder(df$feature, df$gain)
 
