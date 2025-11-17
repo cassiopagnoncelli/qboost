@@ -103,10 +103,20 @@ qboost <- function(
     tails = train_metrics$tails,
     complexity = train_metrics$complexity,
     importance = importance_df,
+    residuals = train_metrics$residuals,
     timings = list(
       start = start_time,
       end = end_time,
       elapsed = as.numeric(difftime(end_time, start_time, units = "secs"))
+    ),
+    data_info = list(
+      n = nrow(x),
+      p = ncol(x)
+    ),
+    cv_settings = list(
+      nrounds = nrounds,
+      nfolds = nfolds,
+      early_stopping_rounds = early_stopping_rounds
     ),
     params_used = params_full,
     training = list(

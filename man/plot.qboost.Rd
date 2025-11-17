@@ -4,14 +4,14 @@
 \alias{plot.qboost}
 \title{Diagnostic plots for \code{qboost} models}
 \usage{
-\method{plot}{qboost}(x, plot = TRUE, top_n = 25, ...)
+\method{plot}{qboost}(x, plot = TRUE, features_n = 25, ...)
 }
 \arguments{
 \item{x}{A fitted \code{qboost} object.}
 
 \item{plot}{Logical; if \code{TRUE}, plots are printed.}
 
-\item{top_n}{Maximum number of features to show in the importance plot.}
+\item{features_n}{Maximum number of features to show in the importance plot.}
 
 \item{...}{Unused, included for compatibility.}
 }

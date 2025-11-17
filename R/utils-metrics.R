@@ -202,12 +202,29 @@ compute_qboost_metrics <- function(y, yhat, tau, cv_result = NULL, model = NULL)
   cov_qce <- coverage_qce(y, yhat, tau)
   calib_curve <- calibration_curve(y, yhat)
   tails <- tail_spread_metric(y, yhat)
+  residuals <- y - yhat
+  res_sd <- stats::sd(residuals, na.rm = TRUE)
+  skew <- if (is.na(res_sd) || res_sd == 0) NA_real_ else {
+    mean((residuals - mean(residuals, na.rm = TRUE))^3, na.rm = TRUE) / (res_sd^3)
+  }
+  residual_stats <- list(
+    median = stats::median(residuals, na.rm = TRUE),
+    iqr = stats::quantile(residuals, 0.75, na.rm = TRUE, names = FALSE) -
+      stats::quantile(residuals, 0.25, na.rm = TRUE, names = FALSE),
+    skewness = skew,
+    tail_spread = tails
+  )
 
   cv_pin <- cv_result$best_score %||% NA_real_
   overfit_gap <- pinball_mean - cv_pin
 
-  importance_df <- tidy_importance(model)
-  leaves <- leaf_stats(model)
+  if (is.null(model)) {
+    importance_df <- tidy_importance(NULL)
+    leaves <- list(total_leaves = NA_real_, avg_leaves_per_tree = NA_real_)
+  } else {
+    importance_df <- tidy_importance(model)
+    leaves <- leaf_stats(model)
+  }
   gain_leaf <- gain_per_leaf_metric(importance_df, leaves$total_leaves)
   entropy <- importance_entropy(importance_df)
 
@@ -229,6 +246,7 @@ compute_qboost_metrics <- function(y, yhat, tau, cv_result = NULL, model = NULL)
     tails = list(
       tail_spread = tails
     ),
+    residuals = residual_stats,
     complexity = list(
       total_leaves = leaves$total_leaves,
       avg_leaves_per_tree = leaves$avg_leaves_per_tree,
@@ -244,7 +262,7 @@ compute_qboost_metrics <- function(y, yhat, tau, cv_result = NULL, model = NULL)
 #' @param pseudo_r2 Pseudo-R2 metric.
 #' @param overfit_gap Overfitting gap (train - CV pinball).
 #'
-#' @return Stability score in [0, 1]-ish space.
+#' @return Stability score roughly bounded between 0 and 1.
 #' @keywords internal
 compute_stability_score <- function(qce, pseudo_r2, overfit_gap) {
   0.50 * (1 - qce) + 0.30 * pseudo_r2 + 0.20 * exp(-overfit_gap)
@@ -265,11 +283,13 @@ tidy_importance <- function(model, ...) {
   if (is.null(imp) || nrow(imp) == 0) {
     return(tibble::tibble(feature = character(), gain = double(), cover = double(), freq = double()))
   }
+  total_gain <- sum(imp$Gain, na.rm = TRUE)
   tibble::tibble(
     feature = imp$Feature,
     gain = imp$Gain,
     cover = imp$Cover %||% NA_real_,
-    freq = imp$Frequency
+    freq = imp$Frequency,
+    share_gain = if (!is.null(total_gain) && total_gain != 0) imp$Gain / total_gain else NA_real_
   ) |> dplyr::arrange(dplyr::desc(gain))
 }
 

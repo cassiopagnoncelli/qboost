@@ -4,10 +4,16 @@
 \alias{summary.qboost}
 \title{Summarise a \code{qboost} model}
 \usage{
-\method{summary}{qboost}(object, ...)
+\method{summary}{qboost}(object, detailed = FALSE, newdata = NULL, y_new = NULL, ...)
 }
 \arguments{
 \item{object}{A fitted \code{qboost} object.}
+
+\item{detailed}{Logical; if TRUE, print extended diagnostics.}
+
+\item{newdata}{Optional new data for out-of-sample summary.}
+
+\item{y_new}{Optional observed outcomes aligned with \code{newdata}.}
 
 \item{...}{Unused, included for compatibility.}
 }

@@ -14,7 +14,7 @@ compute_stability_score(qce, pseudo_r2, overfit_gap)
 \item{overfit_gap}{Overfitting gap (train - CV pinball).}
 }
 \value{
-Stability score in \link{0, 1}-ish space.
+Stability score roughly bounded between 0 and 1.
 }
 \description{
 Stability score computation
