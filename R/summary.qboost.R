@@ -135,6 +135,9 @@ print.qboost_summary <- function(x, ...) {
     cat(" Coverage:         ", format(x$calibration$coverage, digits = 4), "\n", sep = "")
     cat(" Target tau:       ", format(x$calibration$tau, digits = 3), "\n", sep = "")
     cat(" QCE:              ", format(x$calibration$qce, digits = 4), "\n", sep = "")
+    cat(" Slope/Intercept:  ",
+        format(x$calibration$slope, digits = 4), " / ",
+        format(x$calibration$intercept, digits = 4), "\n", sep = "")
     curve_preview <- utils::head(x$calibration$curve, 5)
     if (!is.null(curve_preview) && nrow(curve_preview) > 0) {
       cat(" Nominal vs observed (first 5):\n")

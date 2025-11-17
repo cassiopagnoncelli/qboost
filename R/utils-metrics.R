@@ -14,6 +14,25 @@ pinball_loss <- function(truth, estimate, tau) {
   tau * pos + (1 - tau) * neg
 }
 
+#' Pinball loss components
+#'
+#' Returns positive and negative parts separately.
+#'
+#' @inheritParams pinball_loss
+#' @return Data frame with positive and negative components and total.
+#' @keywords internal
+pinball_loss_components <- function(truth, estimate, tau) {
+  truth <- as.numeric(truth)
+  estimate <- as.numeric(estimate)
+  pos <- pmax(truth - estimate, 0)
+  neg <- pmax(estimate - truth, 0)
+  data.frame(
+    positive = tau * pos,
+    negative = (1 - tau) * neg,
+    total = tau * pos + (1 - tau) * neg
+  )
+}
+
 #' Mean pinball loss
 #'
 #' @inheritParams pinball_loss
@@ -80,6 +99,25 @@ calibration_curve <- function(truth, estimate, probs = seq(0.05, 0.95, by = 0.05
   data.frame(
     nominal = probs,
     observed = observed
+  )
+}
+
+#' Calibration slope and intercept from coverage curve
+#'
+#' Fits a simple linear regression of observed coverage on nominal probability.
+#'
+#' @param calib_df Data frame with columns `nominal` and `observed`.
+#'
+#' @return List with slope and intercept.
+#' @keywords internal
+calibration_fit <- function(calib_df) {
+  if (is.null(calib_df) || nrow(calib_df) < 2) {
+    return(list(slope = NA_real_, intercept = NA_real_))
+  }
+  fit <- stats::lm(observed ~ nominal, data = calib_df)
+  list(
+    slope = unname(coef(fit)[["nominal"]]),
+    intercept = unname(coef(fit)[["(Intercept)"]])
   )
 }
 
@@ -213,6 +251,7 @@ extract_cv_table <- function(cv_result) {
 #' @keywords internal
 compute_qboost_metrics <- function(y, yhat, tau, cv_result = NULL, model = NULL, best_iter = NULL) {
   pinball_mean <- pinball_loss_mean(y, yhat, tau)
+  pinball_comp <- pinball_loss_components(y, yhat, tau)
   mae_val <- mae(y, yhat)
   pseudo <- quantile_pseudo_r2(y, yhat, tau)
   cov_qce <- coverage_qce(y, yhat, tau)
@@ -244,9 +283,12 @@ compute_qboost_metrics <- function(y, yhat, tau, cv_result = NULL, model = NULL,
   gain_leaf <- gain_per_leaf_metric(importance_df, leaves$total_leaves)
   entropy <- importance_entropy(importance_df)
 
+  calib_fit <- calibration_fit(calib_curve)
+
   list(
     metrics = list(
       pinball_loss = pinball_mean,
+      pinball_components = colMeans(pinball_comp, na.rm = TRUE),
       mae = mae_val,
       pseudo_r2 = pseudo,
       best_iter_cv = cv_result$best_iter %||% NA_integer_,
@@ -257,7 +299,9 @@ compute_qboost_metrics <- function(y, yhat, tau, cv_result = NULL, model = NULL,
       coverage = cov_qce$coverage,
       tau = tau,
       qce = cov_qce$qce,
-      curve = calib_curve
+      curve = calib_curve,
+      slope = calib_fit$slope,
+      intercept = calib_fit$intercept
     ),
     tails = list(
       tail_spread = tails
