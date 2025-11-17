@@ -4,7 +4,7 @@
 \alias{leaf_stats}
 \title{Extract leaves statistics from LightGBM model}
 \usage{
-leaf_stats(model)
+leaf_stats(model, best_iter = NULL)
 }
 \arguments{
 \item{model}{An \code{lgb.Booster} object.}

@@ -4,7 +4,14 @@
 \alias{summary.qboost}
 \title{Summarise a \code{qboost} model}
 \usage{
-\method{summary}{qboost}(object, detailed = FALSE, newdata = NULL, y_new = NULL, ...)
+\method{summary}{qboost}(
+  object,
+  detailed = FALSE,
+  newdata = NULL,
+  y_new = NULL,
+  top_features = NULL,
+  ...
+)
 }
 \arguments{
 \item{object}{A fitted \code{qboost} object.}
@@ -14,6 +21,8 @@
 \item{newdata}{Optional new data for out-of-sample summary.}
 
 \item{y_new}{Optional observed outcomes aligned with \code{newdata}.}
+
+\item{top_features}{Integer; number of features to show in importance tables.}
 
 \item{...}{Unused, included for compatibility.}
 }

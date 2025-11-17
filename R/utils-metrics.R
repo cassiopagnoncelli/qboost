@@ -103,7 +103,7 @@ tail_spread_metric <- function(truth, estimate) {
 #'
 #' @return List with total leaves and average leaves per tree.
 #' @keywords internal
-leaf_stats <- function(model) {
+leaf_stats <- function(model, best_iter = NULL) {
   info <- tryCatch(model$dump_model(), error = function(e) NULL)
   tree_info <- if (is.list(info) && !is.null(info$tree_info)) info$tree_info else list()
 
@@ -128,6 +128,22 @@ leaf_stats <- function(model) {
   leaves_clean <- leaves[!is.na(leaves)]
   total <- if (length(leaves_clean) > 0) sum(leaves_clean) else NA_real_
   avg <- if (length(leaves_clean) > 0) mean(leaves_clean) else NA_real_
+
+  # Fallback: estimate using model params when dump is unavailable
+  if (is.na(total) || is.na(avg)) {
+    num_leaves_param <- tryCatch(model$params$num_leaves, error = function(e) NULL)
+    max_leaves_param <- tryCatch(model$params$max_leaves, error = function(e) NULL)
+    leaves_default <- num_leaves_param %||% max_leaves_param %||% 31
+    trees_count <- tryCatch({
+      bi <- if (!is.null(best_iter)) best_iter else model$best_iter %||% NA_real_
+      ci <- tryCatch(model$current_iter(), error = function(e) NA_real_)
+      if (!is.na(bi) && bi > 0) bi else if (!is.na(ci) && ci > 0) ci else NA_real_
+    }, error = function(e) NA_real_)
+    if (!is.na(leaves_default) && !is.na(trees_count)) {
+      total <- leaves_default * trees_count
+      avg <- leaves_default
+    }
+  }
 
   list(
     total_leaves = total,
@@ -195,7 +211,7 @@ extract_cv_table <- function(cv_result) {
 #'
 #' @return List with metrics, calibration, tails, and complexity.
 #' @keywords internal
-compute_qboost_metrics <- function(y, yhat, tau, cv_result = NULL, model = NULL) {
+compute_qboost_metrics <- function(y, yhat, tau, cv_result = NULL, model = NULL, best_iter = NULL) {
   pinball_mean <- pinball_loss_mean(y, yhat, tau)
   mae_val <- mae(y, yhat)
   pseudo <- quantile_pseudo_r2(y, yhat, tau)
@@ -223,7 +239,7 @@ compute_qboost_metrics <- function(y, yhat, tau, cv_result = NULL, model = NULL)
     leaves <- list(total_leaves = NA_real_, avg_leaves_per_tree = NA_real_)
   } else {
     importance_df <- tidy_importance(model)
-    leaves <- leaf_stats(model)
+    leaves <- leaf_stats(model, best_iter = best_iter)
   }
   gain_leaf <- gain_per_leaf_metric(importance_df, leaves$total_leaves)
   entropy <- importance_entropy(importance_df)

@@ -4,12 +4,13 @@
 #' @param detailed Logical; if TRUE, print extended diagnostics.
 #' @param newdata Optional new data for out-of-sample summary.
 #' @param y_new Optional observed outcomes aligned with `newdata`.
+#' @param top_features Integer; number of features to show in importance tables.
 #' @param ... Unused, included for compatibility.
 #'
 #' @return An object of class `qboost_summary`.
 #' @export
 #' @method summary qboost
-summary.qboost <- function(object, detailed = FALSE, newdata = NULL, y_new = NULL, ...) {
+summary.qboost <- function(object, detailed = FALSE, newdata = NULL, y_new = NULL, top_features = NULL, ...) {
   if (!inherits(object, "qboost")) {
     stop("`object` must be a qboost model.", call. = FALSE)
   }
@@ -50,6 +51,13 @@ summary.qboost <- function(object, detailed = FALSE, newdata = NULL, y_new = NUL
     )
   }
 
+  # default top_features: Inf for detailed, 15 for compact
+  top_features_final <- if (is.null(top_features)) {
+    if (isTRUE(detailed)) Inf else 15
+  } else {
+    top_features
+  }
+
   out <- list(
     tau = object$tau,
     best_iter = object$best_iter,
@@ -65,7 +73,8 @@ summary.qboost <- function(object, detailed = FALSE, newdata = NULL, y_new = NUL
     params_used = object$params_used,
     stability = stability,
     detailed = detailed,
-    newdata = new_section
+    newdata = new_section,
+    top_features = top_features_final
   )
 
   class(out) <- "qboost_summary"
@@ -161,9 +170,10 @@ print.qboost_summary <- function(x, ...) {
 
     if (!is.null(x$importance) && nrow(x$importance) > 0) {
       cat("Top features (gain):\n")
-      top <- utils::head(x$importance, 10)
+      top <- utils::head(x$importance, if (is.finite(x$top_features)) x$top_features else nrow(x$importance))
       top$share_gain <- top$share_gain * 100
-      print(top[, c("feature", "gain", "share_gain", "cover", "freq"), drop = FALSE], row.names = FALSE)
+      tbl <- tibble::as_tibble(top[, c("feature", "gain", "share_gain", "cover", "freq"), drop = FALSE])
+      print(tbl, n = Inf)
     } else {
       cat("No feature importance available.\n")
     }
@@ -191,10 +201,11 @@ print.qboost_summary <- function(x, ...) {
       cat("\n")
     }
     if (!is.null(x$importance) && nrow(x$importance) > 0) {
-      top <- utils::head(x$importance, 5)
+      top <- utils::head(x$importance, if (is.finite(x$top_features)) x$top_features else nrow(x$importance))
       top$share_gain <- top$share_gain * 100
       cat(" Top features:\n")
-      print(top[, c("feature", "gain", "share_gain"), drop = FALSE], row.names = FALSE)
+      tbl <- tibble::as_tibble(top[, c("feature", "gain", "share_gain"), drop = FALSE])
+      print(tbl, n = Inf)
     }
     cat("\n(detail = TRUE for full report)\n")
   }

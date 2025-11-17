@@ -4,7 +4,14 @@
 \alias{compute_qboost_metrics}
 \title{Compute evaluation metrics for qboost models}
 \usage{
-compute_qboost_metrics(y, yhat, tau, cv_result = NULL, model = NULL)
+compute_qboost_metrics(
+  y,
+  yhat,
+  tau,
+  cv_result = NULL,
+  model = NULL,
+  best_iter = NULL
+)
 }
 \arguments{
 \item{y}{Observed numeric vector.}

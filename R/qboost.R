@@ -87,7 +87,8 @@ qboost <- function(
     yhat = fitted,
     tau = tau,
     cv_result = cv,
-    model = final_model
+    model = final_model,
+    best_iter = best_iter
   )
 
   importance_df <- tidy_importance(final_model)

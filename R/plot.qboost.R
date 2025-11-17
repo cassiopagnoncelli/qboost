@@ -5,13 +5,13 @@
 #'
 #' @param x A fitted `qboost` object.
 #' @param plot Logical; if `TRUE`, plots are printed.
-#' @param features_n Maximum number of features to show in the importance plot.
+#' @param top_features Maximum number of features to show in the importance plot.
 #' @param ... Unused, included for compatibility.
 #'
 #' @return A list of `ggplot` objects (invisible if printed).
 #' @export
 #' @method plot qboost
-plot.qboost <- function(x, plot = TRUE, features_n = 25, ...) {
+plot.qboost <- function(x, plot = TRUE, top_features = 25, ...) {
   if (!inherits(x, "qboost")) {
     stop("`x` must be a qboost model.", call. = FALSE)
   }
@@ -31,7 +31,7 @@ plot.qboost <- function(x, plot = TRUE, features_n = 25, ...) {
     pinball = plot_pinball_loss(pin_df),
     qq = plot_qq_quantiles(qq_df),
     calibration = plot_calibration_curve(calib_df),
-    importance = plot_feature_importance(imp_df, top_n = features_n)
+    importance = plot_feature_importance(imp_df, top_n = top_features)
   )
 
   if (isTRUE(plot)) {
