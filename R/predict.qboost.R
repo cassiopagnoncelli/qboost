@@ -17,5 +17,6 @@ predict.qboost <- function(object, newdata, ...) {
   if (!is.matrix(newdata)) {
     newdata <- data.matrix(newdata)
   }
-  predict(object$model, data = newdata, ...)
+  # Call the S3 `predict` method for `lgb.Booster` with positional `data`.
+  stats::predict(object$model, newdata, ...)
 }
