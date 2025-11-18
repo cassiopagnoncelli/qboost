@@ -24,7 +24,7 @@ summary.qboost <- function(object, detailed = FALSE, newdata = NULL, y_new = NUL
   new_section <- NULL
   if (!is.null(newdata)) {
     nd <- if (!is.matrix(newdata)) data.matrix(newdata) else newdata
-    preds_new <- predict(object, nd)
+    preds_new <- stats::predict(object, nd)
 
     metrics_new <- NULL
     if (!is.null(y_new)) {
