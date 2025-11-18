@@ -2,7 +2,7 @@
 
 R = /Library/Frameworks/R.framework/Resources/bin/R
 Rscript = /Library/Frameworks/R.framework/Resources/bin/Rscript
-PACKAGE_STAR = ../packages/chartsmith_*.tar.gz
+PACKAGE_STAR = ../packages/qboost_*.tar.gz
 
 all: build install clean
 
