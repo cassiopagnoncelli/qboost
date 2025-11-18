@@ -171,9 +171,9 @@ leaf_stats <- function(model, best_iter = NULL) {
   if (is.na(total) || is.na(avg)) {
     num_leaves_param <- tryCatch(model$params$num_leaves, error = function(e) NULL)
     max_leaves_param <- tryCatch(model$params$max_leaves, error = function(e) NULL)
-    leaves_default <- num_leaves_param %||% max_leaves_param %||% 31
+    leaves_default <- if (!is.null(num_leaves_param)) num_leaves_param else if (!is.null(max_leaves_param)) max_leaves_param else 31
     trees_count <- tryCatch({
-      bi <- if (!is.null(best_iter)) best_iter else model$best_iter %||% NA_real_
+      bi <- if (!is.null(best_iter)) best_iter else if (!is.null(model$best_iter)) model$best_iter else NA_real_
       ci <- tryCatch(model$current_iter(), error = function(e) NA_real_)
       if (!is.na(bi) && bi > 0) bi else if (!is.na(ci) && ci > 0) ci else NA_real_
     }, error = function(e) NA_real_)
@@ -270,7 +270,7 @@ compute_qboost_metrics <- function(y, yhat, tau, cv_result = NULL, model = NULL,
     tail_spread = tails
   )
 
-  cv_pin <- cv_result$best_score %||% NA_real_
+  cv_pin <- if (!is.null(cv_result$best_score)) cv_result$best_score else NA_real_
   overfit_gap <- pinball_mean - cv_pin
 
   if (is.null(model)) {
@@ -291,7 +291,7 @@ compute_qboost_metrics <- function(y, yhat, tau, cv_result = NULL, model = NULL,
       pinball_components = colMeans(pinball_comp, na.rm = TRUE),
       mae = mae_val,
       pseudo_r2 = pseudo,
-      best_iter_cv = cv_result$best_iter %||% NA_integer_,
+      best_iter_cv = if (!is.null(cv_result$best_iter)) cv_result$best_iter else NA_integer_,
       cv_pinball = cv_pin,
       overfit_gap = overfit_gap
     ),
@@ -347,7 +347,7 @@ tidy_importance <- function(model, ...) {
   tibble::tibble(
     feature = imp$Feature,
     gain = imp$Gain,
-    cover = imp$Cover %||% NA_real_,
+    cover = if (!is.null(imp$Cover)) imp$Cover else NA_real_,
     freq = imp$Frequency,
     share_gain = if (!is.null(total_gain) && total_gain != 0) imp$Gain / total_gain else NA_real_
   ) |> dplyr::arrange(dplyr::desc(gain))

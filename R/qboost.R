@@ -69,7 +69,7 @@ qboost <- function(
     ...
   )
 
-  best_iter <- cv$best_iter %||% nrounds
+  best_iter <- if (!is.null(cv$best_iter)) cv$best_iter else nrounds
 
   set.seed(seed)
   final_model <- lightgbm::lgb.train(
@@ -129,6 +129,3 @@ qboost <- function(
   class(out) <- "qboost"
   out
 }
-
-# internal helper mirroring `%||%` from rlang for lightweight use
-`%||%` <- function(x, y) if (is.null(x)) y else x
