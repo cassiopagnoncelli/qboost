@@ -10,7 +10,7 @@ PACKAGE_LIB = ${PACKAGE_DIR}/library
 
 all: build install clean
 
-build: clean
+build: clean docs
 	@${R} CMD build .
 	@pkg=$$(ls ${PACKAGE_TARBALL} | tail -n 1) && \
 		dir=${PACKAGE_DIR} && \
