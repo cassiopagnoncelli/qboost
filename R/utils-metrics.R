@@ -116,8 +116,8 @@ calibration_fit <- function(calib_df) {
   }
   fit <- stats::lm(observed ~ nominal, data = calib_df)
   list(
-    slope = unname(coef(fit)[["nominal"]]),
-    intercept = unname(coef(fit)[["(Intercept)"]])
+    slope = unname(stats::coef(fit)[["nominal"]]),
+    intercept = unname(stats::coef(fit)[["(Intercept)"]])
   )
 }
 

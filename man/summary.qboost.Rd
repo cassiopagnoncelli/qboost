@@ -6,10 +6,10 @@
 \usage{
 \method{summary}{qboost}(
   object,
-  detailed = FALSE,
+  detailed = TRUE,
   newdata = NULL,
   y_new = NULL,
-  top_features = NULL,
+  top_features = 15,
   ...
 )
 }

@@ -1,0 +1,9 @@
+utils::globalVariables(c(
+  "empirical",
+  "feature",
+  "gain",
+  "nominal",
+  "observed",
+  "predicted",
+  "residual"
+))

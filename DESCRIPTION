@@ -8,7 +8,7 @@ Authors@R:
     person("Cassio", "Pagnoncelli", , "cassiopagnoncelli@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0009-0000-7114-7008"))
 Description: High-level quantile regression using LightGBM with clean S3 API, diagnostics, calibration analysis, plots, and model summaries.
-License: MIT
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: false
 LazyLoad: no
@@ -19,7 +19,6 @@ Imports:
     lightgbm,
     ggplot2,
     stats,
-    methods,
     tibble,
     dplyr
 Roxygen: list(markdown = TRUE)
@@ -28,4 +27,5 @@ Suggests:
     testthat (>= 3.0.0),
     knitr,
     rmarkdown
+VignetteBuilder: knitr
 Config/testthat/edition: 3

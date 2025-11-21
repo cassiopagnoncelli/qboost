@@ -2,3 +2,11 @@
 ^renv\.lock$
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^\\.lintr$
+^\\.vscode$
+^Makefile$
+^builds$
+^packages$
+^rd$
+^qboost\.Rcheck$
+^docs$
