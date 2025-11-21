@@ -34,8 +34,7 @@ qboost <- function(
     params = list(),
     early_stopping_rounds = 50,
     seed = 1,
-    ...
-) {
+    ...) {
   start_time <- Sys.time()
 
   if (!is.matrix(x)) {

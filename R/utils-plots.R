@@ -58,9 +58,11 @@ plot_calibration_curve <- function(df) {
 #' @keywords internal
 plot_feature_importance <- function(df, top_n = 25) {
   if (is.null(df) || nrow(df) == 0) {
-    return(ggplot2::ggplot() +
-             ggplot2::labs(title = "No feature importance available") +
-             ggplot2::theme_void())
+    return(
+      ggplot2::ggplot() +
+        ggplot2::labs(title = "No feature importance available") +
+        ggplot2::theme_void()
+    )
   }
 
   df <- df[order(-df$gain), , drop = FALSE]

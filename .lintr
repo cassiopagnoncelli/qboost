@@ -7,8 +7,7 @@ linters:
     trailing_whitespace_linter = NULL,
     commented_code_linter = NULL,
     T_and_F_symbol_linter = NULL,
-    object_usage_linter = NULL,
-    extraction_operator_linter = NULL
+    object_usage_linter = NULL
   )
 exclusions: list("renv/", "renv.lock", ".Rproj.user/", "man/", "tmp/")
 encoding: "UTF-8"

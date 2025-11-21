@@ -26,7 +26,7 @@ fit <- qboost(
 )
 
 # Print summary (compact)
-summary(fit, top_features = 5)
+summary(fit)
 
 # Print detailed summary
 summary(fit, detailed = TRUE)

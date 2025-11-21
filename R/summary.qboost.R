@@ -10,7 +10,7 @@
 #' @return An object of class `qboost_summary`.
 #' @export
 #' @method summary qboost
-summary.qboost <- function(object, detailed = FALSE, newdata = NULL, y_new = NULL, top_features = NULL, ...) {
+summary.qboost <- function(object, detailed = TRUE, newdata = NULL, y_new = NULL, top_features = 15, ...) {
   if (!inherits(object, "qboost")) {
     stop("`object` must be a qboost model.", call. = FALSE)
   }
@@ -52,10 +52,11 @@ summary.qboost <- function(object, detailed = FALSE, newdata = NULL, y_new = NUL
   }
 
   # default top_features: Inf for detailed, 15 for compact
-  top_features_final <- if (is.null(top_features)) {
-    if (isTRUE(detailed)) Inf else 15
+  if (is.null(top_features) || !is.numeric(top_features) ||
+        length(top_features) != 1 || top_features < 1) {
+    top_features_final <- if (isTRUE(detailed)) Inf else 15
   } else {
-    top_features
+    top_features_final <- top_features
   }
 
   out <- list(
@@ -124,7 +125,9 @@ print.qboost_summary <- function(x, ...) {
     cat(" CV pinball loss:  ", format(x$metrics$cv_pinball, digits = 4), "\n", sep = "")
     cat(" Overfit gap:      ", format(x$metrics$overfit_gap, digits = 4), "\n", sep = "")
     cat(" Early stopping:   ", x$cv_settings$early_stopping_rounds, " (nfolds=", x$cv_settings$nfolds,
-        ", nrounds=", x$cv_settings$nrounds, ")\n\n", sep = "")
+      ", nrounds=", x$cv_settings$nrounds, ")\n\n",
+      sep = ""
+    )
 
     cat("Residuals\n")
     cat(" Median:           ", format(x$residuals$median, digits = 4), "\n", sep = "")
@@ -136,8 +139,10 @@ print.qboost_summary <- function(x, ...) {
     cat(" Target tau:       ", format(x$calibration$tau, digits = 3), "\n", sep = "")
     cat(" QCE:              ", format(x$calibration$qce, digits = 4), "\n", sep = "")
     cat(" Slope/Intercept:  ",
-        format(x$calibration$slope, digits = 4), " / ",
-        format(x$calibration$intercept, digits = 4), "\n", sep = "")
+      format(x$calibration$slope, digits = 4), " / ",
+      format(x$calibration$intercept, digits = 4), "\n",
+      sep = ""
+    )
     curve_preview <- utils::head(x$calibration$curve, 5)
     if (!is.null(curve_preview) && nrow(curve_preview) > 0) {
       cat(" Nominal vs observed (first 5):\n")
@@ -152,8 +157,10 @@ print.qboost_summary <- function(x, ...) {
     comp_qce <- 1 - x$calibration$qce
     comp_overfit <- exp(-x$metrics$overfit_gap)
     cat("  components: (1-QCE)=", format(comp_qce, digits = 4),
-        " pseudoR2=", format(x$metrics$pseudo_r2, digits = 4),
-        " exp(-gap)=", format(comp_overfit, digits = 4), "\n\n", sep = "")
+      " pseudoR2=", format(x$metrics$pseudo_r2, digits = 4),
+      " exp(-gap)=", format(comp_overfit, digits = 4), "\n\n",
+      sep = ""
+    )
 
     if (!is.null(x$newdata)) {
       cat("New data\n")
@@ -163,7 +170,9 @@ print.qboost_summary <- function(x, ...) {
         cat(" MAE:              ", format(x$newdata$metrics$mae, digits = 4), "\n", sep = "")
         cat(" Pseudo-R2:        ", format(x$newdata$metrics$pseudo_r2, digits = 4), "\n", sep = "")
         cat(" Coverage:         ", format(x$newdata$calibration$coverage, digits = 4),
-            " (target ", format(x$newdata$calibration$tau, digits = 3), ")\n", sep = "")
+          " (target ", format(x$newdata$calibration$tau, digits = 3), ")\n",
+          sep = ""
+        )
         cat(" QCE:              ", format(x$newdata$calibration$qce, digits = 4), "\n", sep = "")
         cat(" Tail spread:      ", format(x$newdata$tails$tail_spread, digits = 4), "\n\n", sep = "")
       } else {
@@ -187,17 +196,24 @@ print.qboost_summary <- function(x, ...) {
     cat(" Pinball loss:     ", format(x$metrics$pinball_loss, digits = 4), "\n", sep = "")
     cat(" MAE:              ", format(x$metrics$mae, digits = 4), "\n", sep = "")
     cat(" Pseudo-R2:        ", format(x$metrics$pseudo_r2, digits = 4), "\n", sep = "")
-    cat(" Coverage:         ", format(x$calibration$coverage, digits = 4), " (target ", format(x$calibration$tau, digits = 3), ")\n", sep = "")
+    cat(" Coverage:         ", format(x$calibration$coverage, digits = 4),
+      " (target ", format(x$calibration$tau, digits = 3), ")\n",
+      sep = ""
+    )
     cat(" QCE:              ", format(x$calibration$qce, digits = 4), "\n", sep = "")
     cat(" CV pinball:       ", format(x$metrics$cv_pinball, digits = 4),
-        " | gap: ", format(x$metrics$overfit_gap, digits = 4), "\n", sep = "")
+      " | gap: ", format(x$metrics$overfit_gap, digits = 4), "\n",
+      sep = ""
+    )
     if (!is.null(x$newdata)) {
       cat(" New data: ")
       cat("n=", length(x$newdata$predictions))
       if (!is.null(x$newdata$metrics)) {
         cat(", pinball=", format(x$newdata$metrics$pinball_loss, digits = 4),
-            ", MAE=", format(x$newdata$metrics$mae, digits = 4),
-            ", QCE=", format(x$newdata$calibration$qce, digits = 4), sep = "")
+          ", MAE=", format(x$newdata$metrics$mae, digits = 4),
+          ", QCE=", format(x$newdata$calibration$qce, digits = 4),
+          sep = ""
+        )
       } else {
         cat(" (predictions only; provide y_new for metrics)")
       }
@@ -210,7 +226,7 @@ print.qboost_summary <- function(x, ...) {
       tbl <- tibble::as_tibble(top[, c("feature", "gain", "share_gain"), drop = FALSE])
       print(tbl, n = Inf)
     }
-    cat("\n(detail = TRUE for full report)\n")
+    cat("\n(detailed = TRUE for full report)\n")
   }
 
   invisible(x)

@@ -135,6 +135,57 @@ tail_spread_metric <- function(truth, estimate) {
   q90 - q10
 }
 
+#' Extract leaf count from a single tree
+#' @keywords internal
+extract_tree_leaves <- function(tree) {
+  if (!is.list(tree)) {
+    return(NA_real_)
+  }
+  if (!is.null(tree$num_leaves)) {
+    return(tree$num_leaves)
+  }
+  if (!is.null(tree$leaf_value)) {
+    return(length(tree$leaf_value))
+  }
+  NA_real_
+}
+
+#' Get default leaves parameter from model
+#' @keywords internal
+get_default_leaves <- function(model) {
+  num_leaves_param <- tryCatch(model$params$num_leaves, error = function(e) NULL)
+  if (!is.null(num_leaves_param)) {
+    return(num_leaves_param)
+  }
+
+  max_leaves_param <- tryCatch(model$params$max_leaves, error = function(e) NULL)
+  if (!is.null(max_leaves_param)) {
+    return(max_leaves_param)
+  }
+
+  31
+}
+
+#' Get tree count from model
+#' @keywords internal
+get_tree_count <- function(model, best_iter = NULL) {
+  if (!is.null(best_iter)) {
+    return(best_iter)
+  }
+
+  bi <- tryCatch(model$best_iter, error = function(e) NULL)
+  if (!is.null(bi) && !is.na(bi) && bi > 0) {
+    return(bi)
+  }
+
+  ci <- tryCatch(model$current_iter(), error = function(e) NA_real_)
+  if (!is.na(ci) && ci > 0) {
+    return(ci)
+  }
+
+  NA_real_
+}
+
 #' Extract leaves statistics from LightGBM model
 #'
 #' @param model An `lgb.Booster` object.
@@ -146,19 +197,7 @@ leaf_stats <- function(model, best_iter = NULL) {
   tree_info <- if (is.list(info) && !is.null(info$tree_info)) info$tree_info else list()
 
   leaves <- if (length(tree_info) > 0) {
-    vapply(
-      tree_info,
-      function(t) {
-        if (is.list(t) && !is.null(t$num_leaves)) {
-          t$num_leaves
-        } else if (is.list(t) && !is.null(t$leaf_value)) {
-          length(t$leaf_value)
-        } else {
-          NA_real_
-        }
-      },
-      numeric(1)
-    )
+    vapply(tree_info, extract_tree_leaves, numeric(1))
   } else {
     numeric(0)
   }
@@ -169,14 +208,9 @@ leaf_stats <- function(model, best_iter = NULL) {
 
   # Fallback: estimate using model params when dump is unavailable
   if (is.na(total) || is.na(avg)) {
-    num_leaves_param <- tryCatch(model$params$num_leaves, error = function(e) NULL)
-    max_leaves_param <- tryCatch(model$params$max_leaves, error = function(e) NULL)
-    leaves_default <- if (!is.null(num_leaves_param)) num_leaves_param else if (!is.null(max_leaves_param)) max_leaves_param else 31
-    trees_count <- tryCatch({
-      bi <- if (!is.null(best_iter)) best_iter else if (!is.null(model$best_iter)) model$best_iter else NA_real_
-      ci <- tryCatch(model$current_iter(), error = function(e) NA_real_)
-      if (!is.na(bi) && bi > 0) bi else if (!is.na(ci) && ci > 0) ci else NA_real_
-    }, error = function(e) NA_real_)
+    leaves_default <- get_default_leaves(model)
+    trees_count <- get_tree_count(model, best_iter)
+
     if (!is.na(leaves_default) && !is.na(trees_count)) {
       total <- leaves_default * trees_count
       avg <- leaves_default
@@ -259,7 +293,9 @@ compute_qboost_metrics <- function(y, yhat, tau, cv_result = NULL, model = NULL,
   tails <- tail_spread_metric(y, yhat)
   residuals <- y - yhat
   res_sd <- stats::sd(residuals, na.rm = TRUE)
-  skew <- if (is.na(res_sd) || res_sd == 0) NA_real_ else {
+  skew <- if (is.na(res_sd) || res_sd == 0) {
+    NA_real_
+  } else {
     mean((residuals - mean(residuals, na.rm = TRUE))^3, na.rm = TRUE) / (res_sd^3)
   }
   residual_stats <- list(
