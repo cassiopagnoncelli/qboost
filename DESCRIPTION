@@ -1,7 +1,7 @@
 Package: qboost
 Type: Package
 Title: Quantile Gradient Boosting Models in R
-Version: 0.3.5
+Version: 0.4.1
 Author: Cassio Pagnoncelli <cassiopagnoncelli@gmail.com>
 Maintainer: Cassio Pagnoncelli <cassiopagnoncelli@gmail.com>
 Authors@R:
@@ -20,7 +20,9 @@ Imports:
     ggplot2,
     stats,
     tibble,
-    dplyr
+    dplyr,
+    glmnet,
+    evgam
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Suggests:
