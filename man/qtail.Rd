@@ -11,6 +11,7 @@ qtail(
   tail = c("upper", "lower"),
   threshold_tau = NULL,
   params = list(),
+  verbose = FALSE,
   ...
 )
 }
@@ -26,6 +27,8 @@ qtail(
 \item{threshold_tau}{Threshold quantile for EVT}
 
 \item{params}{Parameters passed to fit_qboost}
+
+\item{verbose}{Logical; if TRUE, print progress messages}
 
 \item{...}{Additional arguments passed to fit_qboost}
 }

@@ -9,6 +9,7 @@
 #' @param tail Tail type: "upper" or "lower"
 #' @param threshold_tau Threshold quantile for EVT
 #' @param params Parameters passed to fit_qboost
+#' @param verbose Logical; if TRUE, print progress messages
 #' @param ... Additional arguments passed to fit_qboost
 #'
 #' @return An object of class "qtail"
@@ -18,6 +19,7 @@ qtail <- function(x, y,
                   tail = c("upper", "lower"),
                   threshold_tau = NULL,
                   params = list(),
+                  verbose = FALSE,
                   ...) {
   
   tail <- match.arg(tail)
@@ -51,6 +53,15 @@ qtail <- function(x, y,
     tau_target <- min(taus)
   }
   
+  # Calculate total steps for progress reporting
+  K <- length(taus)
+  total_steps <- K + 4  # preprocessing + K models + stacking matrix + ridge + EVT
+  current_step <- 0
+  
+  # Step 1: Preprocessing
+  current_step <- current_step + 1
+  if (verbose) message(sprintf("[%d/%d] Preprocessing data...", current_step, total_steps))
+  
   # Remove NA rows
   if (is.matrix(x) || is.data.frame(x)) {
     complete_rows <- complete.cases(x, y)
@@ -67,7 +78,11 @@ qtail <- function(x, y,
   
   # Step A: Fit qboost models for each tau
   models <- list()
-  for (tau in taus) {
+  for (j in seq_along(taus)) {
+    tau <- taus[j]
+    current_step <- current_step + 1
+    if (verbose) message(sprintf("[%d/%d] Fitting qboost for tau=%g...", current_step, total_steps, tau))
+    
     models[[as.character(tau)]] <- qboost(x, y, tau = tau, nrounds = params$nrounds %||% 500, 
                                           nfolds = params$nfolds %||% 5, 
                                           early_stopping_rounds = params$early_stopping_rounds %||% 50,
@@ -75,6 +90,8 @@ qtail <- function(x, y,
   }
   
   # Step B: Build stacking design matrix
+  current_step <- current_step + 1
+  if (verbose) message(sprintf("[%d/%d] Building stacking design matrix...", current_step, total_steps))
   n <- length(y)
   K <- length(taus)
   Z <- matrix(0, nrow = n, ncol = K)
@@ -86,6 +103,9 @@ qtail <- function(x, y,
   }
   
   # Step C: Fit ridge regression (stacking model)
+  current_step <- current_step + 1
+  if (verbose) message(sprintf("[%d/%d] Fitting ridge regression (stacking layer)...", current_step, total_steps))
+  
   cv <- glmnet::cv.glmnet(Z, y, alpha = 0, family = "gaussian")
   coef_obj <- coef(cv, s = "lambda.min")
   
@@ -97,6 +117,8 @@ qtail <- function(x, y,
   names(stack$coef) <- c("(Intercept)", colnames(Z))
   
   # Step D: EVT (GPD) tail fitting
+  current_step <- current_step + 1
+  if (verbose) message(sprintf("[%d/%d] Fitting GPD tail model...", current_step, total_steps))
   q_thresh_hat <- predict(models[[as.character(threshold_tau)]], x)
   r <- y - q_thresh_hat
   
@@ -152,5 +174,12 @@ qtail <- function(x, y,
   )
   
   class(object) <- "qtail"
+  
+  # Completion message
+  if (verbose) {
+    message(sprintf("✓ qtail model complete (%s tail, target tau=%g, %d exceedances)", 
+                    tail, tau_target, length(e_exc)))
+  }
+  
   return(object)
 }

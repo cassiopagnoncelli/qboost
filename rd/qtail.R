@@ -1,3 +1,5 @@
+devtools::load_all()
+
 # ETL.
 quotes <- qetl::get_sample_quotes()
 macro <- fets::macro()
@@ -18,3 +20,7 @@ decomposed <- fets::decomposeXY(mXY, na.rm.X = TRUE, na.rm.Y = TRUE)
 Y <- decomposed$Y
 X <- decomposed$X %>% dplyr::select(-matches("^(smoothed_close)"))
 y <- Y$excursion_high
+
+# Qtail.
+train <- 1:5000
+fit <- qtail(X[train, ], y[train], tail = "upper")

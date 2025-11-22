@@ -118,14 +118,14 @@
     },
     "data.table": {
       "Package": "data.table",
-      "Version": "1.17.8",
+      "Version": "1.17.99",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "https://rdatatable.gitlab.io/data.table",
       "Requirements": [
         "R",
         "methods"
       ],
-      "Hash": "1d991cd6160fa7b1fdbd3689034cbd15"
+      "Hash": "73f530e66682fe40c074ca39856cbd42"
     },
     "dplyr": {
       "Package": "dplyr",
