@@ -1,7 +1,7 @@
 Package: qboost
 Type: Package
 Title: Quantile Gradient Boosting Models in R
-Version: 0.4.1
+Version: 0.4.2
 Author: Cassio Pagnoncelli <cassiopagnoncelli@gmail.com>
 Maintainer: Cassio Pagnoncelli <cassiopagnoncelli@gmail.com>
 Authors@R:
@@ -28,8 +28,6 @@ RoxygenNote: 7.3.3
 Suggests:
     testthat (>= 3.0.0),
     knitr,
-    rmarkdown,
-    cassiopagnoncelli/qetl,
-    cassiopagnoncelli/fets
+    rmarkdown
 VignetteBuilder: knitr
 Config/testthat/edition: 3

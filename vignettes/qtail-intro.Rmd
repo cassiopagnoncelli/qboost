@@ -1,0 +1,265 @@
+---
+title: "Introduction to qtail: Extreme Quantile Modeling with EVT"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to qtail: Extreme Quantile Modeling with EVT}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+# Overview
+
+The `qtail` package provides a sophisticated framework for modeling extreme quantiles using a three-level stacked architecture combined with Extreme Value Theory (EVT). This vignette demonstrates the core functionality and diagnostic tools.
+
+## Installation
+
+```{r eval=FALSE}
+# Install from GitHub
+devtools::install_github("your-repo/qboost")
+```
+
+## Load Package
+
+```{r eval=FALSE}
+library(qboost)
+```
+
+# Basic Usage
+
+## Fitting a qtail Model
+
+The `qtail()` function fits an extreme quantile model using:
+- **Level 1**: Multiple qboost quantile regression models
+- **Level 2**: Ridge regression stacking
+- **Level 3**: GPD-based EVT tail extension
+
+```{r eval=FALSE}
+# Generate sample data
+set.seed(123)
+n <- 1000
+x <- matrix(rnorm(n * 5), ncol = 5)
+y <- x[, 1] * 2 + x[, 2] + rt(n, df = 3)
+
+# Fit upper tail model
+fit_upper <- qtail(
+  x = x,
+  y = y,
+  tail = "upper",
+  params = list(nrounds = 100, nfolds = 5)
+)
+
+# Fit lower tail model  
+fit_lower <- qtail(
+  x = x,
+  y = y,
+  tail = "lower",
+  params = list(nrounds = 100, nfolds = 5)
+)
+```
+
+## Model Summary
+
+```{r eval=FALSE}
+# Detailed summary
+summary(fit_upper, detailed = TRUE)
+
+# Compact summary
+summary(fit_upper, detailed = FALSE)
+```
+
+The summary shows:
+- Data dimensions and tail configuration
+- Stacking architecture details
+- EVT parameters (shape ξ, scale β)
+- Training performance metrics
+- Calibration curve
+
+# Prediction
+
+## Prediction Types
+
+qtail supports four prediction types:
+
+```{r eval=FALSE}
+# New data
+x_new <- matrix(rnorm(50 * 5), ncol = 5)
+
+# Final predictions (with EVT adjustment)
+pred_final <- predict(fit_upper, x_new, type = "final")
+
+# Stacked predictions (before EVT)
+pred_stack <- predict(fit_upper, x_new, type = "stack")
+
+# Grid of quantile predictions
+pred_grid <- predict(fit_upper, x_new, type = "grid")
+
+# EVT extension only
+pred_evt <- predict(fit_upper, x_new, type = "evt")
+```
+
+## Custom Quantile Levels
+
+Use `tau_override` to predict at custom quantile levels:
+
+```{r eval=FALSE}
+# Predict at 0.95 quantile
+pred_95 <- predict(fit_upper, x_new, type = "final", tau_override = 0.95)
+
+# Predict at 0.999 quantile
+pred_999 <- predict(fit_upper, x_new, type = "final", tau_override = 0.999)
+```
+
+# Diagnostics
+
+## Calibration Error
+
+Quantile Calibration Error (QCE) measures prediction calibration:
+
+```{r eval=FALSE}
+# Compute QCE for all taus
+qce_results <- qtail_qce(fit_upper)
+print(qce_results)
+
+# Compute QCE for specific taus
+qce_custom <- qtail_qce(fit_upper, taus = c(0.95, 0.99))
+```
+
+## Calibration Slope
+
+Logistic regression-based calibration assessment:
+
+```{r eval=FALSE}
+# At target tau
+slope_data <- qtail_calibration_slope(fit_upper)
+print(slope_data$slope)
+
+# At custom tau
+slope_95 <- qtail_calibration_slope(fit_upper, tau = 0.95)
+```
+
+## PIT Diagnostics
+
+Probability Integral Transform for distribution assessment:
+
+```{r eval=FALSE}
+# Compute PIT values
+pit_values <- qtail_pit(fit_upper)
+
+# PIT histogram
+qtail_pit_plot(fit_upper, breaks = 40)
+```
+
+A uniform distribution indicates well-calibrated predictions.
+
+## Stability Metric
+
+Composite stability score:
+
+```{r eval=FALSE}
+stab <- qtail_stability(fit_upper)
+print(stab)
+# $stability: overall score
+# $qce: calibration error  
+# $slope: calibration slope
+# $overfit_gap: train-validation gap
+```
+
+# Out-of-Sample Validation
+
+```{r eval=FALSE}
+# Generate test data
+x_test <- matrix(rnorm(200 * 5), ncol = 5)
+y_test <- x_test[, 1] * 2 + x_test[, 2] + rt(200, df = 3)
+
+# Comprehensive validation
+val_results <- qtail_validate(fit_upper, x_test, y_test)
+print(val_results)
+# Returns: tau, observed, qce, pit_mean, pit_sd
+```
+
+# Visualization
+
+## Diagnostic Plots
+
+qtail provides five plot types:
+
+```{r eval=FALSE}
+# 1. Calibration curve
+plot(fit_upper, type = "calibration")
+
+# 2. Stacking coefficients
+plot(fit_upper, type = "stack_coeffs")
+
+# 3. EVT tail extrapolation
+plot(fit_upper, type = "evt_tail")
+
+# 4. GPD QQ-plot
+plot(fit_upper, type = "gpd_qq")
+
+# 5. Residuals histogram
+plot(fit_upper, type = "residuals")
+```
+
+# Advanced Usage
+
+## Custom Quantile Grid
+
+```{r eval=FALSE}
+# Fit with custom tau levels
+fit_custom <- qtail(
+  x = x,
+  y = y,
+  taus = c(0.90, 0.95, 0.98, 0.99, 0.995),
+  threshold_tau = 0.98,
+  tail = "upper",
+  params = list(nrounds = 100)
+)
+```
+
+## Extracting Components
+
+```{r eval=FALSE}
+# Stacking coefficients
+coefs <- coef(fit_upper)
+
+# EVT parameters
+evt_params <- tail_params(fit_upper)
+
+# Training residuals
+resids <- residuals(fit_upper)
+
+# Fitted values
+fitted_vals <- fitted(fit_upper)
+
+# Calibration curve
+cal_curve <- calibration_curve(fit_upper)
+```
+
+# Best Practices
+
+1. **Data Requirements**: Ensure sufficient data, especially for extreme quantiles
+2. **Tail Selection**: Use `tail="upper"` for right-tail extremes, `tail="lower"` for left-tail
+3. **Threshold Selection**: Choose `threshold_tau` based on data availability (default: 0.99 for upper, 0.01 for lower)
+4. **Validation**: Always validate on held-out data using `qtail_validate()`
+5. **Diagnostics**: Check PIT uniformity and calibration curves
+
+# References
+
+- McNeil, A. J., Frey, R., & Embrechts, P. (2015). *Quantitative Risk Management*
+- Meinshausen, N., & Ridgeway, G. (2006). *Quantile Regression Forests*
+- Chernozhukov, V., & Hong, H. (2003). *An MCMC approach to classical estimation*
+
+# Session Info
+
+```{r}
+sessionInfo()
+```
