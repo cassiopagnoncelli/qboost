@@ -10,7 +10,7 @@ Authors@R:
 Description: High-level quantile regression using LightGBM with clean S3 API, diagnostics, calibration analysis, plots, and model summaries.
 License: MIT + file LICENSE
 Encoding: UTF-8
-LazyData: false
+# LazyData: false
 LazyLoad: no
 ByteCompile: no
 Depends:

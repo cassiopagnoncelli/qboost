@@ -29,7 +29,7 @@ fit <- qboost(
 summary(fit)
 
 # Print detailed summary
-summary(fit, detailed = TRUE)
+summary(fit, detailed = FALSE)
 
 # Plot diagnostics (returns list of ggplots)
 plots <- plot(fit, plot = FALSE, top_features = 4)

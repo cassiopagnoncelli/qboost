@@ -1,5 +1,3 @@
-source("~/.Rprofile")
-
 source("renv/activate.R")
 
 # Note: Connection pool cleanup is handled automatically by the pool package's
