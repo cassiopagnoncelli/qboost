@@ -9,9 +9,10 @@ calibration_curve.qtail <- function(object, ...) {
   
   # Set nominals based on tail type
   if (object$tail == "upper") {
-    nominals <- c(0.95, 0.97, 0.99, 0.997, 0.999)
+    nominals <- c(.95, .975, .99, .995, .997, .9985, .999, .9993, .9998)
+    
   } else {
-    nominals <- c(0.05, 0.03, 0.01, 0.003, 0.001)
+    nominals <- c(.05, .025, .01, .005, .003, .0015, .001, .0007, .0002)
   }
   
   observed <- numeric(length(nominals))

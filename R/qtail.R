@@ -27,15 +27,15 @@ qtail <- function(x, y,
   # Set defaults based on tail
   if (is.null(taus)) {
     if (tail == "upper") {
-      taus <- c(0.95, 0.97, 0.99, 0.993, 0.999)
+      taus <- c(.95, .975, .99, .995, .997, .9985, .999, .9993, .9998)
     } else {
-      taus <- c(0.05, 0.03, 0.01, 0.007, 0.001)
+      taus <- c(.05, .025, .01, .005, .003, .0015, .001, .0007, .0002)
     }
   }
   
   if (is.null(threshold_tau)) {
     if (tail == "upper") {
-      threshold_tau <- 0.99
+      threshold_tau <- 0.997
     } else {
       threshold_tau <- 0.01
     }
@@ -58,9 +58,17 @@ qtail <- function(x, y,
   total_steps <- K + 4  # preprocessing + K models + stacking matrix + ridge + EVT
   current_step <- 0
   
+  # Track overall start time
+  if (verbose){
+    overall_start <- Sys.time()
+  }
+  
   # Step 1: Preprocessing
   current_step <- current_step + 1
-  if (verbose) message(sprintf("[%d/%d] Preprocessing data...", current_step, total_steps))
+  if (verbose) {
+    message(sprintf("[%d/%d] Preprocessing data...", current_step, total_steps))
+    step_start <- Sys.time()
+  }
   
   # Remove NA rows
   if (is.matrix(x) || is.data.frame(x)) {
@@ -76,22 +84,44 @@ qtail <- function(x, y,
     y <- y[complete_rows]
   }
   
+  if (verbose) {
+    elapsed <- round(as.numeric(difftime(Sys.time(), step_start, units = "secs")), 2)
+    message(sprintf("  → Completed in %.2fs", elapsed))
+  }
+  
   # Step A: Fit qboost models for each tau
   models <- list()
   for (j in seq_along(taus)) {
     tau <- taus[j]
     current_step <- current_step + 1
-    if (verbose) message(sprintf("[%d/%d] Fitting qboost for tau=%g...", current_step, total_steps, tau))
+    if (verbose) {
+      message(sprintf("[%d/%d] Fitting qboost for tau=%g...", current_step, total_steps, tau))
+      step_start <- Sys.time()
+    }
     
-    models[[as.character(tau)]] <- qboost(x, y, tau = tau, nrounds = params$nrounds %||% 500, 
-                                          nfolds = params$nfolds %||% 5, 
-                                          early_stopping_rounds = params$early_stopping_rounds %||% 50,
-                                          params = params, ...)
+    models[[as.character(tau)]] <- qboost(
+      x,
+      y,
+      tau = tau,
+      nrounds = params$nrounds %||% 500,
+      nfolds = params$nfolds %||% 5, 
+      early_stopping_rounds = params$early_stopping_rounds %||% 50,
+      params = params, 
+      ...
+    )
+    
+    if (verbose) {
+      elapsed <- round(as.numeric(difftime(Sys.time(), step_start, units = "secs")), 2)
+      message(sprintf("  → Completed in %.2fs", elapsed))
+    }
   }
   
   # Step B: Build stacking design matrix
   current_step <- current_step + 1
-  if (verbose) message(sprintf("[%d/%d] Building stacking design matrix...", current_step, total_steps))
+  if (verbose) {
+    message(sprintf("[%d/%d] Building stacking design matrix...", current_step, total_steps))
+    step_start <- Sys.time()
+  }
   n <- length(y)
   K <- length(taus)
   Z <- matrix(0, nrow = n, ncol = K)
@@ -102,23 +132,50 @@ qtail <- function(x, y,
     Z[, j] <- predict(models[[as.character(tau)]], x)
   }
   
-  # Step C: Fit ridge regression (stacking model)
-  current_step <- current_step + 1
-  if (verbose) message(sprintf("[%d/%d] Fitting ridge regression (stacking layer)...", current_step, total_steps))
+  if (verbose) {
+    elapsed <- round(as.numeric(difftime(Sys.time(), step_start, units = "secs")), 2)
+    message(sprintf("  → Completed in %.2fs", elapsed))
+  }
   
-  cv <- glmnet::cv.glmnet(Z, y, alpha = 0, family = "gaussian")
-  coef_obj <- coef(cv, s = "lambda.min")
+  # Step C: Fit elastic net stacking model
+  current_step <- current_step + 1
+  if (verbose) {
+    message(sprintf("[%d/%d] Fitting elastic net (stacking layer)...", current_step, total_steps))
+    step_start <- Sys.time()
+  }
+  
+  Z <- scale(Z)
+  lambda_stack <- 0.01
+  alpha_stack <- 0.7
+  enet_fit <- glmnet::glmnet(
+    Z,
+    y,
+    alpha = alpha_stack,
+    lambda = lambda_stack,
+    family = "gaussian",
+    intercept = FALSE
+  )
+  coef_obj <- c(0, as.vector(enet_fit$beta[, 1]))
   
   stack <- list(
     coef = as.vector(coef_obj),
-    lambda = cv$lambda.min,
-    glmnet_fit = cv
+    lambda = lambda_stack,
+    alpha = alpha_stack,
+    glmnet_fit = enet_fit
   )
   names(stack$coef) <- c("(Intercept)", colnames(Z))
   
+  if (verbose) {
+    elapsed <- round(as.numeric(difftime(Sys.time(), step_start, units = "secs")), 2)
+    message(sprintf("  → Completed in %.2fs", elapsed))
+  }
+  
   # Step D: EVT (GPD) tail fitting
   current_step <- current_step + 1
-  if (verbose) message(sprintf("[%d/%d] Fitting GPD tail model...", current_step, total_steps))
+  if (verbose) {
+    message(sprintf("[%d/%d] Fitting GPD tail model...", current_step, total_steps))
+    step_start <- Sys.time()
+  }
   q_thresh_hat <- predict(models[[as.character(threshold_tau)]], x)
   r <- y - q_thresh_hat
   
@@ -128,24 +185,57 @@ qtail <- function(x, y,
     e <- pmax(-r, 0)
   }
   
-  # Filter exceedances
-  e_exc <- e[e > 0]
+  # Filter exceedances and remove any NA/Inf values
+  e_exc <- e[e > 0 & is.finite(e)]
+  
+  # Default GPD parameters
+  xi <- 0.1
+  beta <- 1.0
+  evfit <- NULL
   
   if (length(e_exc) < 10) {
-    warning("Very few exceedances for EVT fitting, using default GPD parameters")
-    # Use default/simple GPD parameters when insufficient data
-    xi <- 0.1
-    beta <- stats::sd(e_exc)
-    evfit <- NULL
+    warning("Very few exceedances for EVT fitting (", length(e_exc), " < 10), using default GPD parameters")
+    beta <- ifelse(length(e_exc) > 0, stats::sd(e_exc), 1.0)
   } else {
-    evfit <- evgam::evgam(list(e ~ 1),
-                          data = data.frame(e = e_exc),
-                          family = "gpd")
-    
-    # Extract xi (shape) and beta (scale)
-    coef_evt <- coef(evfit)
-    xi <- coef_evt[1]
-    beta <- exp(coef_evt[2])
+    # Try to fit GPD, fall back to defaults on error
+    fit_success <- tryCatch({
+      # Create clean numeric vector
+      exc_vec <- as.numeric(e_exc)
+      
+      # Validate data
+      if (length(exc_vec) < 10 || any(!is.finite(exc_vec)) || any(exc_vec <= 0)) {
+        stop("Invalid exceedances data")
+      }
+      
+      # Create proper data frame for evgam
+      evt_data <- data.frame(y = exc_vec)
+      
+      # Fit evgam with simpler formula syntax
+      evfit <<- evgam::evgam(y ~ 1, data = evt_data, family = "gpd")
+      
+      # Extract xi (shape) and beta (scale)
+      coef_evt <- stats::coef(evfit)
+      xi <<- coef_evt[1]
+      beta <<- exp(coef_evt[2])
+      
+      TRUE
+    }, error = function(err) {
+      if (verbose) {
+        message("  Warning: EVT fitting failed (", err$message, "), using default GPD parameters")
+      } else {
+        warning("EVT fitting failed, using default GPD parameters")
+      }
+      # Keep defaults
+      xi <<- 0.1
+      beta <<- ifelse(length(e_exc) > 0 && is.finite(stats::sd(e_exc)), stats::sd(e_exc), 1.0)
+      evfit <<- NULL
+      FALSE
+    })
+  }
+  
+  if (verbose) {
+    elapsed <- round(as.numeric(difftime(Sys.time(), step_start, units = "secs")), 2)
+    message(sprintf("  → Completed in %.2fs", elapsed))
   }
   
   evt <- list(
@@ -177,8 +267,16 @@ qtail <- function(x, y,
   
   # Completion message
   if (verbose) {
-    message(sprintf("✓ qtail model complete (%s tail, target tau=%g, %d exceedances)", 
-                    tail, tau_target, length(e_exc)))
+    total_elapsed <- round(as.numeric(difftime(Sys.time(), overall_start, units = "secs")), 2)
+    message(
+      sprintf(
+        "✓ qtail model complete (%s tail, target tau=%g, %d exceedances) [Total: %.2fs]", 
+        tail,
+        tau_target,
+        length(e_exc),
+        total_elapsed
+      )
+    )
   }
   
   return(object)

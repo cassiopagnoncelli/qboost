@@ -51,7 +51,9 @@ qboost <- function(
   params_default <- list(
     objective = "quantile",
     alpha = tau,
-    metric = "quantile"
+    metric = "quantile",
+    num_leaves = 200,
+    max_depth = 14
   )
   params_full <- utils::modifyList(params_default, params)
 
