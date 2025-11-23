@@ -129,7 +129,7 @@ qtail <- function(x, y,
   
   for (j in seq_along(taus)) {
     tau <- taus[j]
-    Z_raw[, j] <- predict(models[[as.character(tau)]], x)
+    Z_raw[, j] <- .lgb_predict(models[[as.character(tau)]], data.matrix(x))
   }
   
   Z <- apply_pava_monotonicity(Z_raw, taus)
@@ -177,7 +177,7 @@ qtail <- function(x, y,
     message(sprintf("[%d/%d] Fitting GPD tail model...", current_step, total_steps))
     step_start <- Sys.time()
   }
-  q_thresh_hat <- predict(models[[as.character(threshold_tau)]], x)
+  q_thresh_hat <- .lgb_predict(models[[as.character(threshold_tau)]], data.matrix(x))
   r <- y - q_thresh_hat
   
   if (tail == "upper") {

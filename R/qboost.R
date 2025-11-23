@@ -81,7 +81,7 @@ qboost <- function(
     ...
   )
 
-  fitted <- stats::predict(final_model, x)
+  fitted <- .lgb_predict(final_model, x)
 
   train_metrics <- compute_qboost_metrics(
     y = y,

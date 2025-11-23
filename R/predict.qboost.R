@@ -17,5 +17,5 @@ predict.qboost <- function(object, newdata, ...) {
   if (!is.matrix(newdata)) {
     newdata <- data.matrix(newdata)
   }
-  stats::predict(object$model, newdata, ...)
+  .lgb_predict(object$model, newdata)
 }

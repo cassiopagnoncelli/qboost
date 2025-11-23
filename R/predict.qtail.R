@@ -20,7 +20,7 @@ predict.qtail <- function(object, newdata,
   # Step 1: Compute grid predictions
   preds <- list()
   for (tau in object$taus) {
-    preds[[as.character(tau)]] <- predict(object$models[[as.character(tau)]], newdata)
+    preds[[as.character(tau)]] <- .lgb_predict(object$models[[as.character(tau)]], data.matrix(newdata))
   }
   preds_mat <- do.call(cbind, preds)
   colnames(preds_mat) <- names(preds)

@@ -64,7 +64,9 @@ qevt <- function(
     tau3 = tau3,
     tau_target = tau_target,
     u = u,
-    taus_full = taus_full
+    taus_full = taus_full,
+    train_x = X,
+    train_y = y
   )
   class(model) <- "qevt"
   elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))

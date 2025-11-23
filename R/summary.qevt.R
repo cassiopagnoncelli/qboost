@@ -16,6 +16,19 @@ summary.qevt <- function(object, ...) {
       " status=", gpd_status, "\n", sep = "")
   cat(" Exceedance model: LightGBM binary\n")
   cat(" Sub-quantile models: ", length(object$sub_models), " LightGBM quantile models\n", sep = "")
+  # If held-out data stored, compute quick tail diagnostics
+  if (!is.null(object$train_x) && !is.null(object$train_y)) {
+    preds <- predict(object, object$train_x)
+    q999 <- preds$monotone[, which(preds$taus == 0.999)]
+    y <- object$train_y
+    kendall_idx <- q999 > stats::quantile(q999, 0.999, na.rm = TRUE)
+    if (any(kendall_idx)) {
+      kendall <- suppressWarnings(stats::cor(y[kendall_idx], q999[kendall_idx], method = "kendall", use = "pairwise.complete.obs"))
+      cat(" Kendall@0.999 (train): ", format(kendall, digits = 4), "\n", sep = "")
+    }
+    cover <- mean(y <= q999, na.rm = TRUE)
+    cat(" Coverage@0.999 (train): ", format(cover, digits = 4), "\n", sep = "")
+  }
   invisible(list(
     tau0 = object$tau0,
     u = object$u,

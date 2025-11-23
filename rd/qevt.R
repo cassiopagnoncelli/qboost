@@ -49,9 +49,11 @@ model <- qevt(zX[train_idx, ], y[train_idx], tau_target = 0.999)
 
 summary(model)
 
+plot(model, newdata = zX[test_idx, ])
+
 # Predictions
 preds <- predict(model, zX[-train_idx, ]) # Predict on holdout
-stopifnot(all(apply(preds$monotone, 1, function(v) all(diff(v) >= 0)))) # Monotonicity check
+stopifnot(all(apply(preds$monotone, 1, function(v) all(diff(v) >= 0)))) # Monotonicity
 q999 <- preds$monotone[, which(preds$taus == 0.999)] # Extract q0.999
 
 actuals <- y[-train_idx]
@@ -66,7 +68,7 @@ cor(tb$y[idx], tb$yhat[idx], method = "kendall")
 idx <- tb$yhat > quantile(tb$yhat, 0.999, na.rm = TRUE)
 cor(tb$y[idx], tb$yhat[idx], method = "kendall")
 
-idx <- tb$yhat > quantile(tb$yhat, 0.9995, na.rm = TRUE)
+idx <- tb$yhat > quantile(tb$yhat, 0.9993, na.rm = TRUE)
 cor(tb$y[idx], tb$yhat[idx], method = "kendall")
 
 # Distributions

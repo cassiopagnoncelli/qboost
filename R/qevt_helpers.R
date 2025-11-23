@@ -107,7 +107,8 @@ fit_subquantile_models <- function(X, y, tau_grid_sub, params = list(), nrounds 
 }
 
 predict_exceedance <- function(model, X) {
-  as.numeric(predict(model$model, data.matrix(X)))
+  booster <- model$model
+  .lgb_predict(booster, data.matrix(X))
 }
 
 predict_subquantiles <- function(models, X, tau_grid_sub = NULL) {
@@ -115,7 +116,8 @@ predict_subquantiles <- function(models, X, tau_grid_sub = NULL) {
     tau_grid_sub <- as.numeric(names(models))
   }
   preds <- lapply(tau_grid_sub, function(tau) {
-    predict(models[[as.character(tau)]], data.matrix(X))
+    booster <- models[[as.character(tau)]]
+    .lgb_predict(booster, data.matrix(X))
   })
   mat <- do.call(cbind, preds)
   colnames(mat) <- as.character(tau_grid_sub)

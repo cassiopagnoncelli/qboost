@@ -21,7 +21,8 @@ predict.qevt <- function(object, newdata, ...) {
   use_gpd <- isTRUE(object$gpd$converged) && is.finite(object$gpd$xi) && is.finite(object$gpd$beta) && object$gpd$beta > 0
   severity_pred <- rep(0, n)
   if (!is.null(object$severity_model)) {
-    severity_pred <- as.numeric(predict(object$severity_model, data.matrix(newdata)))
+    booster <- object$severity_model
+    severity_pred <- .lgb_predict(booster, data.matrix(newdata))
   }
   elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
   eta <- elapsed / step_idx * (total_steps - step_idx)
