@@ -47,9 +47,9 @@ zXY <- tibble::tibble(zX, Y)
 # Qevt fit on scaled features.
 model <- qevt(zX[train_idx, ], y[train_idx], tau_target = 0.999)
 
-summary(model)
+summary(model, newdata = zX[test_idx, ], y = y[test_idx])
 
-plot(model, newdata = zX[test_idx, ])
+plot(model, newdata = zX[test_idx, ], y = y[test_idx])
 
 # Predictions
 preds <- predict(model, zX[-train_idx, ]) # Predict on holdout
@@ -57,31 +57,34 @@ stopifnot(all(apply(preds$monotone, 1, function(v) all(diff(v) >= 0)))) # Monoto
 q999 <- preds$monotone[, which(preds$taus == 0.999)] # Extract q0.999
 
 actuals <- y[-train_idx]
-residuals <- actuals - q999
+residuals <- actuals - q999[, 2]
 
-tb <- tibble::tibble(data.frame(y = actuals, yhat = q999, e = residuals))
+tb <- tibble::tibble(data.frame(y = actuals, yhat = q999[, 2], e = residuals))
 
 # Kendall Ordering
-idx <- tb$yhat > quantile(tb$yhat, 0.998, na.rm = TRUE)
-cor(tb$y[idx], tb$yhat[idx], method = "kendall")
-
-idx <- tb$yhat > quantile(tb$yhat, 0.999, na.rm = TRUE)
-cor(tb$y[idx], tb$yhat[idx], method = "kendall")
-
-idx <- tb$yhat > quantile(tb$yhat, 0.9993, na.rm = TRUE)
-cor(tb$y[idx], tb$yhat[idx], method = "kendall")
+kendall_at <- function(thresh) {
+  idx <- tb$yhat > stats::quantile(tb$yhat, thresh, na.rm = TRUE)
+  if (sum(idx, na.rm = TRUE) < 2) return(NA_real_)
+  suppressWarnings(stats::cor(tb$y[idx], tb$yhat[idx], method = "kendall", use = "pairwise.complete.obs"))
+}
+kendall_998 <- kendall_at(0.998)
+kendall_999 <- kendall_at(0.999)
+kendall_9993 <- kendall_at(0.9993)
+kendall_998
+kendall_999
+kendall_9993
 
 # Distributions
 analyse_distribution(exp(actuals))
 
 tb %>%
-  dplyr::filter(yhat > quantile(yhat, probs = .999)) %>%
+  dplyr::filter(yhat > quantile(yhat, probs = .997)) %>%
   dplyr::pull(y) %>%
   { exp(.) } %>%
   analyse_distribution()
 
 tb %>%
-  dplyr::filter(y > quantile(y, probs = .999)) %>%
+  dplyr::filter(y > quantile(y, probs = .997)) %>%
   dplyr::pull(y) %>%
   { exp(.) } %>%
   analyse_distribution()
