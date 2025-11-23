@@ -124,13 +124,15 @@ qtail <- function(x, y,
   }
   n <- length(y)
   K <- length(taus)
-  Z <- matrix(0, nrow = n, ncol = K)
-  colnames(Z) <- as.character(taus)
+  Z_raw <- matrix(0, nrow = n, ncol = K)
+  colnames(Z_raw) <- as.character(taus)
   
   for (j in seq_along(taus)) {
     tau <- taus[j]
-    Z[, j] <- predict(models[[as.character(tau)]], x)
+    Z_raw[, j] <- predict(models[[as.character(tau)]], x)
   }
+  
+  Z <- apply_pava_monotonicity(Z_raw, taus)
   
   if (verbose) {
     elapsed <- round(as.numeric(difftime(Sys.time(), step_start, units = "secs")), 2)
@@ -144,9 +146,8 @@ qtail <- function(x, y,
     step_start <- Sys.time()
   }
   
-  Z <- scale(Z)
   lambda_stack <- 0.01
-  alpha_stack <- 0.7
+  alpha_stack <- 0
   enet_fit <- glmnet::glmnet(
     Z,
     y,

@@ -22,22 +22,30 @@ predict.qtail <- function(object, newdata,
   for (tau in object$taus) {
     preds[[as.character(tau)]] <- predict(object$models[[as.character(tau)]], newdata)
   }
+  preds_mat <- do.call(cbind, preds)
+  colnames(preds_mat) <- names(preds)
+  
+  preds_mat <- apply_pava_monotonicity(preds_mat, object$taus)
   
   if (type == "grid") {
-    preds_mat <- do.call(cbind, preds)
-    colnames(preds_mat) <- names(preds)
     return(preds_mat)
   }
   
   # Step 2: Compute stacked prediction
   intercept <- object$stack$coef[1]
   coefs <- object$stack$coef[-1]
+  Z <- preds_mat
   
-  q_stack <- intercept
-  for (j in seq_along(object$taus)) {
-    tau <- object$taus[j]
-    q_stack <- q_stack + coefs[j] * preds[[as.character(tau)]]
+  # Apply stacking scale/center used during fitting
+  if (!is.null(object$stack$center) && !is.null(object$stack$scale)) {
+    sc_center <- object$stack$center
+    sc_scale <- object$stack$scale
+    sc_scale[sc_scale == 0] <- 1
+    Z <- sweep(Z, 2, sc_center, "-")
+    Z <- sweep(Z, 2, sc_scale, "/")
   }
+  
+  q_stack <- intercept + as.numeric(Z %*% coefs)
   
   if (type == "stack") {
     return(q_stack)
