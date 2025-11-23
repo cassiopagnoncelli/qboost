@@ -45,7 +45,7 @@ mczXY <- tibble::tibble(meta, close, zX, Y)
 zXY <- tibble::tibble(zX, Y)
 
 # Qevt fit on scaled features.
-model <- qevt(zX[train_idx, ], y[train_idx], tau_target = 0.999)
+model <- qevt(zX[train_idx, ], y[train_idx], tau_target = 0.9965)
 
 summary(model, newdata = zX[test_idx, ], y = y[test_idx])
 
@@ -54,12 +54,12 @@ plot(model, newdata = zX[test_idx, ], y = y[test_idx])
 # Predictions
 preds <- predict(model, zX[-train_idx, ]) # Predict on holdout
 stopifnot(all(apply(preds$monotone, 1, function(v) all(diff(v) >= 0)))) # Monotonicity
-q999 <- preds$monotone[, which(preds$taus == 0.999)] # Extract q0.999
+selected_q <- preds$monotone[, which(preds$taus == preds$taus[4])[1]] # Extract q0.999
 
 actuals <- y[-train_idx]
-residuals <- actuals - q999[, 2]
+residuals <- actuals - selected_q
 
-tb <- tibble::tibble(data.frame(y = actuals, yhat = q999[, 2], e = residuals))
+tb <- tibble::tibble(data.frame(y = actuals, yhat = selected_q, e = residuals))
 
 # Kendall Ordering
 kendall_at <- function(thresh) {
