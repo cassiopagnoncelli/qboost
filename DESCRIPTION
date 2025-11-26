@@ -1,7 +1,7 @@
 Package: qboost
 Type: Package
 Title: Quantile Gradient Boosting Models in R
-Version: 0.4.3
+Version: 0.4.4
 Author: Cassio Pagnoncelli <cassiopagnoncelli@gmail.com>
 Maintainer: Cassio Pagnoncelli <cassiopagnoncelli@gmail.com>
 Authors@R:
