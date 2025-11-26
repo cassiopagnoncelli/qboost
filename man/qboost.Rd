@@ -5,21 +5,19 @@
 \title{Fit a LightGBM quantile regression model}
 \usage{
 qboost(
-  x,
-  y,
+  ...,
   tau = 0.5,
   nrounds = 500,
   nfolds = 5,
   params = list(),
   early_stopping_rounds = 50,
-  seed = 1,
-  ...
+  seed = 1
 )
 }
 \arguments{
-\item{x}{A matrix or data.frame of predictors.}
-
-\item{y}{Numeric response vector.}
+\item{...}{Either a formula and optional \code{data} argument or an \code{x}/\code{y} pair
+followed by additional arguments forwarded to \code{lightgbm::lgb.cv()} /
+\code{lightgbm::lgb.train()}.}
 
 \item{tau}{Target quantile in (0, 1].}
 
@@ -32,23 +30,25 @@ qboost(
 \item{early_stopping_rounds}{Early stopping patience in CV.}
 
 \item{seed}{Random seed for reproducibility.}
-
-\item{...}{Additional arguments forwarded to \code{lightgbm::lgb.cv()} / \code{lgb.train()}.}
 }
 \value{
 An object of class \code{qboost}.
 }
 \description{
-Provides a clean, \code{lm}-style interface for quantile regression using LightGBM.
-Cross-validates to find the best iteration, refits on full data, and computes
-rich diagnostics and calibration metrics.
+Provides a clean, \code{lm}-style interface for quantile regression using
+LightGBM. Accepts either a formula + data or an \code{x}/\code{y} pair, cross-validates
+to find the best iteration, refits on full data, and computes rich
+diagnostics and calibration metrics.
 }
 \examples{
 \dontrun{
 set.seed(1)
-x <- matrix(rnorm(200), ncol = 2)
-y <- x[, 1] * 0.5 + rnorm(100)
-fit <- qboost(x, y, tau = 0.3, nrounds = 50, nfolds = 3)
-predict(fit, x[1:5, ])
+df <- data.frame(
+  x1 = rnorm(200),
+  x2 = rnorm(200)
+)
+df$y <- df$x1 * 0.5 + rnorm(200)
+fit <- qboost(y ~ x1 + x2, data = df, tau = 0.3, nrounds = 50, nfolds = 3)
+predict(fit, head(df[, c("x1", "x2")]))
 }
 }

@@ -9,7 +9,9 @@
 \arguments{
 \item{object}{A fitted \code{qboost} object.}
 
-\item{newdata}{New data.frame or matrix of predictors.}
+\item{newdata}{New data.frame or matrix of predictors. For models fit with a
+formula, a data.frame with the same predictor columns used at training
+time is expected.}
 
 \item{...}{Additional arguments passed to \code{stats::predict()}.}
 }

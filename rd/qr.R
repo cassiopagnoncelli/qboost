@@ -25,6 +25,15 @@ fit <- qboost(
   early_stopping_rounds = 20
 )
 
+fit <- qboost(
+  y ~ .,
+  data = cbind(y, x),
+  tau = 0.25,
+  nrounds = 200,
+  nfolds = 5,
+  early_stopping_rounds = 20
+)
+
 # Print summary (compact)
 summary(fit)
 

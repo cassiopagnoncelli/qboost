@@ -22,6 +22,9 @@ knitr::opts_chunk$set(
 cross-validation, automatic best-iteration selection, calibrated diagnostics,
 and publication-ready plots.
 
+You can supply data via a formula (shown below) or by passing an `x`/`y` pair;
+`qboost()` will derive the design matrix accordingly.
+
 ## Fit a model
 
 ```{r}
@@ -29,15 +32,15 @@ library(qboost)
 set.seed(1)
 
 n <- 200
-x <- data.frame(
+df <- data.frame(
   x1 = rnorm(n),
   x2 = runif(n)
 )
-y <- 0.5 * x$x1 - 0.2 * x$x2 + rnorm(n, sd = 0.8)
+df$y <- 0.5 * df$x1 - 0.2 * df$x2 + rnorm(n, sd = 0.8)
 
 fit <- qboost(
-  x = x,
-  y = y,
+  y ~ x1 + x2,
+  data = df,
   tau = 0.3,
   nrounds = 200,
   nfolds = 5,
@@ -48,7 +51,7 @@ fit <- qboost(
 ## Predict new values
 
 ```{r}
-newdata <- head(x, 5)
+newdata <- head(df[, c("x1", "x2")], 5)
 predict(fit, newdata)
 ```
 

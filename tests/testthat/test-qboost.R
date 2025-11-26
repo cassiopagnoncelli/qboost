@@ -30,6 +30,25 @@ testthat::test_that("summary works", {
   testthat::expect_true(!is.null(capture.output(print(s))))
 })
 
+testthat::test_that("formula interface fits and predicts", {
+  testthat::skip_on_cran()
+  testthat::skip_if_not_installed("lightgbm")
+
+  set.seed(99)
+  df <- data.frame(
+    y = rnorm(60),
+    x1 = rnorm(60),
+    x2 = runif(60)
+  )
+
+  fit <- qboost(y ~ x1 + x2, data = df, tau = 0.35, nrounds = 20, nfolds = 2, early_stopping_rounds = 5)
+  preds <- predict(fit, df[1:5, c("x1", "x2")])
+
+  testthat::expect_s3_class(fit, "qboost")
+  testthat::expect_type(preds, "double")
+  testthat::expect_length(preds, 5)
+})
+
 testthat::test_that("plots are returned as ggplot list", {
   testthat::skip_on_cran()
   testthat::skip_if_not_installed("lightgbm")
