@@ -54,3 +54,6 @@ tmp/*
 .DS_Store
 
 builds/
+
+**/*/Rplots.pdf
+
