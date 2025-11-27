@@ -51,8 +51,10 @@ summary.qevt <- function(object, newdata = NULL, y = NULL, ...) {
       kendall_idx <- q999 > stats::quantile(q999, 0.999, na.rm = TRUE)
       kendall <- NA_real_
       if (any(kendall_idx)) {
-        kendall <- suppressWarnings(stats::cor(y_vec[kendall_idx], q999[kendall_idx],
-          method = "kendall", use = "pairwise.complete.obs"))
+        kendall <- suppressWarnings(
+          stats::cor(y_vec[kendall_idx], q999[kendall_idx],
+                     method = "kendall", use = "pairwise.complete.obs")
+        )
       }
       cover <- mean(y_vec <= q999, na.rm = TRUE)
       cat(" Kendall@0.999 (", label_txt, "): ", format(kendall, digits = 4), "\n", sep = "")
