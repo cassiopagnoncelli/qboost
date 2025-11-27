@@ -2,8 +2,8 @@
 ^renv\.lock$
 ^.*\.Rproj$
 ^\.Rproj\.user$
-^\\.lintr$
-^\\.vscode$
+^\.lintr$
+^\.vscode$
 ^Makefile$
 ^builds$
 ^packages$
@@ -18,9 +18,9 @@
 ^\.DS_Store$
 ^\.\.Rcheck$
 ^\.git$
-^builds$
-^Makefile$
 ^TODO\.md$
-^rd$
 ^AGENTS\.md$
-.vscode
+^dev$
+^cran-comments\.md$
+^NEWS\.md$
+^CRAN_SUBMISSION_CHECKLIST\.md$
