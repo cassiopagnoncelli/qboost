@@ -3,26 +3,63 @@
 
 #' Fit qtail model
 #'
-#' @param x Feature matrix
-#' @param y Target vector
-#' @param taus Quantile levels to fit
+#' Provides a clean interface for extreme quantile tail modeling using
+#' LightGBM quantile regression combined with Extreme Value Theory (EVT).
+#' Accepts either a formula + data or an `x`/`y` pair.
+#'
+#' @param ... Either a formula and optional `data` argument or an `x`/`y` pair
+#'   followed by additional arguments.
+#' @param taus Quantile levels to fit. If NULL, defaults based on tail type.
 #' @param tail Tail type: "upper" or "lower"
-#' @param threshold_tau Threshold quantile for EVT
-#' @param params Parameters passed to fit_qboost
+#' @param threshold_tau Threshold quantile for EVT. If NULL, defaults based on tail type.
+#' @param params Parameters passed to qboost (nrounds, nfolds, etc.)
 #' @param verbose Logical; if TRUE, print progress messages
-#' @param ... Additional arguments passed to fit_qboost
 #'
 #' @return An object of class "qtail"
 #' @export
-qtail <- function(x, y,
+#' 
+#' @examples
+#' \dontrun{
+#' # Using formula interface
+#' set.seed(123)
+#' df <- data.frame(
+#'   x1 = rnorm(200),
+#'   x2 = rnorm(200)
+#' )
+#' df$y <- df$x1 * 2 + df$x2 * 0.5 + rt(200, df = 3) * 2
+#' 
+#' fit <- qtail(y ~ x1 + x2, data = df, tail = "upper", 
+#'              params = list(nrounds = 50, nfolds = 3))
+#' 
+#' # Using x/y interface
+#' x <- as.matrix(df[, c("x1", "x2")])
+#' y <- df$y
+#' fit <- qtail(x, y, tail = "upper", params = list(nrounds = 50, nfolds = 3))
+#' }
+qtail <- function(...,
                   taus = NULL,
                   tail = c("upper", "lower"),
                   threshold_tau = NULL,
                   params = list(),
-                  verbose = FALSE,
-                  ...) {
+                  verbose = FALSE) {
   
   tail <- match.arg(tail)
+  
+  # Parse inputs (formula or x/y)
+  dots <- list(...)
+  parsed <- .parse_qtail_inputs(dots)
+  
+  x <- parsed$x
+  y <- as.numeric(parsed$y)
+  extra_args <- parsed$extra_args
+  
+  if (!is.matrix(x)) {
+    x <- data.matrix(x)
+  }
+  
+  if (nrow(x) != length(y)) {
+    stop("`x` and `y` must have compatible dimensions.", call. = FALSE)
+  }
   
   # Set defaults based on tail
   if (is.null(taus)) {
@@ -106,8 +143,7 @@ qtail <- function(x, y,
       nrounds = params$nrounds %||% 500,
       nfolds = params$nfolds %||% 5, 
       early_stopping_rounds = params$early_stopping_rounds %||% 50,
-      params = params, 
-      ...
+      params = params
     )
     
     if (verbose) {
@@ -295,7 +331,8 @@ qtail <- function(x, y,
     x = x,
     y = y,
     training_y = y,
-    n = n
+    n = n,
+    preprocess = parsed$preprocess
   )
   
   class(object) <- "qtail"
@@ -315,4 +352,85 @@ qtail <- function(x, y,
   }
   
   return(object)
+}
+
+# Parse qtail inputs (formula or x/y) - similar to qboost
+.parse_qtail_inputs <- function(dots) {
+  if (length(dots) == 0) {
+    stop("Provide either a formula or an `x`/`y` pair.", call. = FALSE)
+  }
+
+  nm <- names(dots)
+  if (is.null(nm)) {
+    nm <- rep("", length(dots))
+  }
+  nm[is.na(nm)] <- ""
+
+  is_formula <- vapply(dots, inherits, logical(1), what = "formula")
+  if (any(is_formula)) {
+    formula_idx <- which(is_formula)[1]
+    formula <- dots[[formula_idx]]
+
+    data_idx <- integer(0)
+    if ("data" %in% nm) {
+      data_idx <- which(nm == "data")[1]
+    } else {
+      unnamed <- which(!nzchar(nm))
+      unnamed <- unnamed[unnamed != formula_idx]
+      if (length(unnamed) > 0) {
+        data_idx <- unnamed[1]
+      }
+    }
+
+    data <- if (length(data_idx) > 0) dots[[data_idx]] else NULL
+
+    mf <- stats::model.frame(formula, data = data, na.action = stats::na.pass)
+    y <- stats::model.response(mf)
+    mm <- stats::model.matrix(formula, mf)
+    terms_obj <- stats::terms(mf)
+
+    preprocess <- list(
+      type = "formula",
+      terms = terms_obj,
+      xlevels = stats::.getXlevels(terms_obj, mf),
+      contrasts = attr(mm, "contrasts"),
+      formula = formula,
+      feature_names = colnames(mm)
+    )
+
+    extra_idx <- setdiff(seq_along(dots), c(formula_idx, data_idx))
+    extra_args <- if (length(extra_idx) > 0) dots[extra_idx] else list()
+
+    return(list(
+      x = mm,
+      y = y,
+      extra_args = extra_args,
+      preprocess = preprocess
+    ))
+  }
+
+  x_idx <- if ("x" %in% nm) which(nm == "x")[1] else 1L
+  remaining <- setdiff(seq_along(dots), x_idx)
+  if (length(remaining) == 0) {
+    stop("`y` must be provided when using `x`/`y` inputs.", call. = FALSE)
+  }
+  y_idx <- if ("y" %in% nm) which(nm == "y")[1] else remaining[1]
+
+  x <- dots[[x_idx]]
+  y <- dots[[y_idx]]
+
+  extra_idx <- setdiff(seq_along(dots), c(x_idx, y_idx))
+  extra_args <- if (length(extra_idx) > 0) dots[extra_idx] else list()
+
+  preprocess <- list(
+    type = "xy",
+    feature_names = colnames(x)
+  )
+
+  list(
+    x = x,
+    y = y,
+    extra_args = extra_args,
+    preprocess = preprocess
+  )
 }
