@@ -17,8 +17,9 @@ build: clean docs
 		mkdir -p $$dir && \
 		mv $$pkg $$dir/
 
-check:
-	@${R} CMD check .
+check: build
+	@${R} CMD check --no-manual $$(ls ${PACKAGE_STAR} | tail -n 1)
+	@rm -rf ${PACKAGE_NAME}.Rcheck
 
 install: build
 	@Rscript -e 'print(.libPaths())'

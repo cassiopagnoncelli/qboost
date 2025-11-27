@@ -10,3 +10,16 @@
 ^rd$
 ^qboost\.Rcheck$
 ^docs$
+^\.gitignore$
+^\.lintr$
+^\.Renviron$
+^\.Rhistory$
+^\.Rprofile$
+^\.DS_Store$
+^\.\.Rcheck$
+^\.git$
+^builds$
+^Makefile$
+^TODO\.md$
+^rd$
+^AGENTS\.md$
