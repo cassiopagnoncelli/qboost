@@ -5,36 +5,54 @@
 \title{Fit qtail model}
 \usage{
 qtail(
-  x,
-  y,
+  ...,
   taus = NULL,
   tail = c("upper", "lower"),
   threshold_tau = NULL,
   params = list(),
-  verbose = FALSE,
-  ...
+  verbose = FALSE
 )
 }
 \arguments{
-\item{x}{Feature matrix}
+\item{...}{Either a formula and optional \code{data} argument or an \code{x}/\code{y} pair
+followed by additional arguments.}
 
-\item{y}{Target vector}
-
-\item{taus}{Quantile levels to fit}
+\item{taus}{Quantile levels to fit. If NULL, defaults based on tail type.}
 
 \item{tail}{Tail type: "upper" or "lower"}
 
-\item{threshold_tau}{Threshold quantile for EVT}
+\item{threshold_tau}{Threshold quantile for EVT. If NULL, defaults based on tail type.}
 
-\item{params}{Parameters passed to fit_qboost}
+\item{params}{Parameters passed to qboost (nrounds, nfolds, etc.)}
 
 \item{verbose}{Logical; if TRUE, print progress messages}
-
-\item{...}{Additional arguments passed to fit_qboost}
 }
 \value{
 An object of class "qtail"
 }
 \description{
-Fit qtail model
+Provides a clean interface for extreme quantile tail modeling using
+LightGBM quantile regression combined with Extreme Value Theory (EVT).
+Accepts either a formula + data or an \code{x}/\code{y} pair.
+}
+\examples{
+\dontrun{
+# Using formula interface
+set.seed(123)
+df <- data.frame(
+  x1 = rnorm(200),
+  x2 = rnorm(200)
+)
+df$y <- df$x1 * 2 + df$x2 * 0.5 + rt(200, df = 3) * 2
+
+fit <- qtail(y ~ x1 + x2,
+  data = df, tail = "upper",
+  params = list(nrounds = 50, nfolds = 3)
+)
+
+# Using x/y interface
+x <- as.matrix(df[, c("x1", "x2")])
+y <- df$y
+fit <- qtail(x, y, tail = "upper", params = list(nrounds = 50, nfolds = 3))
+}
 }
