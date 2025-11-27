@@ -27,15 +27,15 @@ qtail <- function(x, y,
   # Set defaults based on tail
   if (is.null(taus)) {
     if (tail == "upper") {
-      taus <- c(.95, .975, .99, .995, .997, .9985, .999, .9993, .9998)
+      taus <- c(0.95, 0.97, 0.99, 0.993, 0.999)
     } else {
-      taus <- c(.05, .025, .01, .005, .003, .0015, .001, .0007, .0002)
+      taus <- c(0.05, 0.03, 0.01, 0.007, 0.001)
     }
   }
   
   if (is.null(threshold_tau)) {
     if (tail == "upper") {
-      threshold_tau <- 0.997
+      threshold_tau <- 0.99
     } else {
       threshold_tau <- 0.01
     }
@@ -129,10 +129,26 @@ qtail <- function(x, y,
   
   for (j in seq_along(taus)) {
     tau <- taus[j]
-    Z_raw[, j] <- .lgb_predict(models[[as.character(tau)]], data.matrix(x))
+    preds <- .lgb_predict(models[[as.character(tau)]]$model, data.matrix(x))
+    # Replace NA/Inf values with the tau-th quantile of y as fallback
+    if (any(!is.finite(preds))) {
+      fallback <- stats::quantile(y, probs = tau, na.rm = TRUE)
+      preds[!is.finite(preds)] <- fallback
+    }
+    Z_raw[, j] <- preds
   }
   
   Z <- apply_pava_monotonicity(Z_raw, taus)
+  
+  # Final check for any remaining NA/Inf values after monotonicity
+  if (any(!is.finite(Z))) {
+    for (j in seq_len(ncol(Z))) {
+      if (any(!is.finite(Z[, j]))) {
+        fallback <- stats::quantile(y, probs = taus[j], na.rm = TRUE)
+        Z[!is.finite(Z[, j]), j] <- fallback
+      }
+    }
+  }
   
   if (verbose) {
     elapsed <- round(as.numeric(difftime(Sys.time(), step_start, units = "secs")), 2)
@@ -148,15 +164,33 @@ qtail <- function(x, y,
   
   lambda_stack <- 0.01
   alpha_stack <- 0
-  enet_fit <- glmnet::glmnet(
-    Z,
-    y,
-    alpha = alpha_stack,
-    lambda = lambda_stack,
-    family = "gaussian",
-    intercept = FALSE
-  )
-  coef_obj <- c(0, as.vector(enet_fit$beta[, 1]))
+  
+  # Try to fit glmnet, but fall back to equal weights if zero variance
+  enet_fit <- NULL
+  coef_obj <- c(0, rep(1 / K, K))  # Initialize with equal weights
+  
+  fit_success <- tryCatch({
+    enet_fit <- glmnet::glmnet(
+      Z,
+      y,
+      alpha = alpha_stack,
+      lambda = lambda_stack,
+      family = "gaussian",
+      intercept = FALSE
+    )
+    coef_obj <- c(0, as.vector(enet_fit$beta[, 1]))
+    TRUE
+  }, error = function(e) {
+    if (grepl("zero variance", e$message, ignore.case = TRUE)) {
+      # Use equal weights as fallback (already initialized)
+      if (verbose) {
+        message("  Note: Using equal weights (zero variance detected)")
+      }
+      FALSE
+    } else {
+      stop(e)
+    }
+  })
   
   stack <- list(
     coef = as.vector(coef_obj),
@@ -177,7 +211,7 @@ qtail <- function(x, y,
     message(sprintf("[%d/%d] Fitting GPD tail model...", current_step, total_steps))
     step_start <- Sys.time()
   }
-  q_thresh_hat <- .lgb_predict(models[[as.character(threshold_tau)]], data.matrix(x))
+  q_thresh_hat <- .lgb_predict(models[[as.character(threshold_tau)]]$model, data.matrix(x))
   r <- y - q_thresh_hat
   
   if (tail == "upper") {

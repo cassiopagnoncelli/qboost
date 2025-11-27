@@ -20,12 +20,28 @@ predict.qtail <- function(object, newdata,
   # Step 1: Compute grid predictions
   preds <- list()
   for (tau in object$taus) {
-    preds[[as.character(tau)]] <- .lgb_predict(object$models[[as.character(tau)]], data.matrix(newdata))
+    pred_vals <- .lgb_predict(object$models[[as.character(tau)]]$model, data.matrix(newdata))
+    # Handle any NA/Inf values with fallback to training quantiles
+    if (any(!is.finite(pred_vals))) {
+      fallback <- stats::quantile(object$y, probs = tau, na.rm = TRUE)
+      pred_vals[!is.finite(pred_vals)] <- fallback
+    }
+    preds[[as.character(tau)]] <- pred_vals
   }
   preds_mat <- do.call(cbind, preds)
   colnames(preds_mat) <- names(preds)
   
   preds_mat <- apply_pava_monotonicity(preds_mat, object$taus)
+  
+  # Final check for any remaining NA/Inf values after monotonicity
+  if (any(!is.finite(preds_mat))) {
+    for (j in seq_len(ncol(preds_mat))) {
+      if (any(!is.finite(preds_mat[, j]))) {
+        fallback <- stats::quantile(object$y, probs = object$taus[j], na.rm = TRUE)
+        preds_mat[!is.finite(preds_mat[, j]), j] <- fallback
+      }
+    }
+  }
   
   if (type == "grid") {
     return(preds_mat)
