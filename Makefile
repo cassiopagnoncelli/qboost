@@ -8,7 +8,7 @@ PACKAGE_DIR = builds
 PACKAGE_STAR = ${PACKAGE_DIR}/${PACKAGE_TARBALL}
 PACKAGE_LIB = ${PACKAGE_DIR}/library
 
-all: build install clean
+all: lint build install clean
 
 build: clean docs
 	@${R} CMD build .
@@ -47,7 +47,9 @@ lint:
 		if (!requireNamespace('lintr', quietly = TRUE)) \
 			install.packages('lintr'); \
 		library(lintr); \
-		lint_dir('.')"
+		lints <- lint_dir('.'); \
+		print(lints); \
+		if (length(lints) > 0) quit(status = 1)"
 
 style:
 	@${R} --quiet --vanilla --slave -e "\
