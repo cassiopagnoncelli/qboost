@@ -9,7 +9,19 @@ summary.qevt <- function(object, newdata = NULL, y = NULL, ...) {
   cat("qevt: Extreme Quantile Model\n")
   cat(" Threshold tau0:", sprintf("%.4f", object$tau0), "\n")
   cat(" u:", format(object$u, digits = 6), "\n")
-  cat(" Tail taus:", paste(format(c(object$tau1, object$tau2, object$tau3, object$tau_target), digits = 6), collapse = ", "), "\n")
+  taus_str <- paste(
+    format(
+      c(
+        object$tau1,
+        object$tau2,
+        object$tau3,
+        object$tau_target
+      ),
+      digits = 6
+    ),
+    collapse = ", "
+  )
+  cat(" Tail taus:", taus_str, "\n")
   cat(" Sub-quantile grid:", paste(format(object$tau_grid_sub, digits = 4), collapse = ", "), "\n")
   gpd_status <- if (isTRUE(object$gpd$converged)) "converged" else "not converged"
   cat(" GPD: xi=", format(object$gpd$xi, digits = 6),
@@ -39,7 +51,8 @@ summary.qevt <- function(object, newdata = NULL, y = NULL, ...) {
       kendall_idx <- q999 > stats::quantile(q999, 0.999, na.rm = TRUE)
       kendall <- NA_real_
       if (any(kendall_idx)) {
-        kendall <- suppressWarnings(stats::cor(y_vec[kendall_idx], q999[kendall_idx], method = "kendall", use = "pairwise.complete.obs"))
+        kendall <- suppressWarnings(stats::cor(y_vec[kendall_idx], q999[kendall_idx],
+          method = "kendall", use = "pairwise.complete.obs"))
       }
       cover <- mean(y_vec <= q999, na.rm = TRUE)
       cat(" Kendall@0.999 (", label_txt, "): ", format(kendall, digits = 4), "\n", sep = "")

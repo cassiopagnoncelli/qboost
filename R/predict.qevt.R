@@ -18,7 +18,8 @@ predict.qevt <- function(object, newdata, ...) {
   message(sprintf("[Predict %d/%d] Sub-quantile predictions...", step_idx, total_steps))
   sub_mat <- predict_subquantiles(object$sub_models, newdata, object$tau_grid_sub)
   n <- nrow(sub_mat)
-  use_gpd <- isTRUE(object$gpd$converged) && is.finite(object$gpd$xi) && is.finite(object$gpd$beta) && object$gpd$beta > 0
+  use_gpd <- isTRUE(object$gpd$converged) && is.finite(object$gpd$xi) &&
+    is.finite(object$gpd$beta) && object$gpd$beta > 0
   severity_pred <- rep(0, n)
   if (!is.null(object$severity_model)) {
     booster <- object$severity_model

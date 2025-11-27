@@ -9,5 +9,5 @@ linters:
     T_and_F_symbol_linter = NULL,
     object_usage_linter = NULL
   )
-exclusions: list("renv/", "renv.lock", ".Rproj.user/", "man/", "tmp/")
+exclusions: list(".Rproj.user/", "man/", "tmp/")
 encoding: "UTF-8"
