@@ -6,6 +6,16 @@
 \usage{
 predict_quantiles_monotone(models, newdata, taus)
 }
+\arguments{
+\item{models}{List from fit_quantile_models}
+
+\item{newdata}{Feature matrix/data.frame}
+
+\item{taus}{Quantile levels (in same order used for fitting)}
+}
+\value{
+Matrix with isotonic-adjusted predictions
+}
 \description{
 Convenience: predict and enforce monotone
 }

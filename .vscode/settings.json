@@ -1,9 +1,0 @@
-{
-  // R settings
-  "r.lsp.diagnostics": true,
-  "r.lsp.enabled": true,
-  "r.lintr.enabled": true,
-  "r.lintr.linters": {
-    "line_length_linter": 120
-  },
-}

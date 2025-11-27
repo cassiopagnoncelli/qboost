@@ -24,7 +24,7 @@
 
   if (verbose) {
     elapsed <- round(as.numeric(difftime(Sys.time(), step_start, units = "secs")), 2)
-    message(sprintf("  → Completed in %.2fs", elapsed))
+    message(sprintf("  -> Completed in %.2fs", elapsed))
   }
 
   list(x = x, y = y)
@@ -54,7 +54,7 @@
 
     if (verbose) {
       elapsed <- round(as.numeric(difftime(Sys.time(), step_start, units = "secs")), 2)
-      message(sprintf("  → Completed in %.2fs", elapsed))
+      message(sprintf("  -> Completed in %.2fs", elapsed))
     }
   }
   models
@@ -99,7 +99,7 @@
 
   if (verbose) {
     elapsed <- round(as.numeric(difftime(Sys.time(), step_start, units = "secs")), 2)
-    message(sprintf("  → Completed in %.2fs", elapsed))
+    message(sprintf("  -> Completed in %.2fs", elapsed))
   }
 
   Z
@@ -155,7 +155,7 @@
 
   if (verbose) {
     elapsed <- round(as.numeric(difftime(Sys.time(), step_start, units = "secs")), 2)
-    message(sprintf("  → Completed in %.2fs", elapsed))
+    message(sprintf("  -> Completed in %.2fs", elapsed))
   }
 
   stack
@@ -222,7 +222,7 @@
 
   if (verbose) {
     elapsed <- round(as.numeric(difftime(Sys.time(), step_start, units = "secs")), 2)
-    message(sprintf("  → Completed in %.2fs", elapsed))
+    message(sprintf("  -> Completed in %.2fs", elapsed))
   }
 
   list(
@@ -360,7 +360,7 @@ qtail <- function(...,
     total_elapsed <- round(as.numeric(difftime(Sys.time(), overall_start, units = "secs")), 2)
     message(
       sprintf(
-        "✓ qtail model complete (%s tail, target tau=%g, %d exceedances) [Total: %.2fs]",
+        "[OK] qtail model complete (%s tail, target tau=%g, %d exceedances) [Total: %.2fs]",
         tail, tau_target, evt$n_exceedances, total_elapsed
       )
     )

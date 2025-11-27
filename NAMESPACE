@@ -1,3 +1,7 @@
+importFrom("graphics", "abline", "axis", "barplot", "grid", "hist",
+           "legend", "lines", "mtext", "par", "plot.new", "points",
+           "segments", "text")
+importFrom("stats", "complete.cases", "predict")
 export(qboost)
 export(predict.qboost)
 export(plot.qboost)

@@ -12,7 +12,7 @@ predict.qevt <- function(object, newdata, ...) {
   p_exc <- predict_exceedance(object$exceed_model, newdata)
   elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
   eta <- elapsed / step_idx * (total_steps - step_idx)
-  message(sprintf("  → done in %.2fs (ETA %.2fs)", elapsed, eta))
+  message(sprintf("  -> done in %.2fs (ETA %.2fs)", elapsed, eta))
 
   step_idx <- step_idx + 1
   message(sprintf("[Predict %d/%d] Sub-quantile predictions...", step_idx, total_steps))
@@ -27,7 +27,7 @@ predict.qevt <- function(object, newdata, ...) {
   }
   elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
   eta <- elapsed / step_idx * (total_steps - step_idx)
-  message(sprintf("  → done in %.2fs (ETA %.2fs)", elapsed, eta))
+  message(sprintf("  -> done in %.2fs (ETA %.2fs)", elapsed, eta))
 
   step_idx <- step_idx + 1
   message(sprintf("[Predict %d/%d] EVT quantiles...", step_idx, total_steps))
@@ -50,7 +50,7 @@ predict.qevt <- function(object, newdata, ...) {
   q_evt_target <- evt_with_fallback(object$tau_target)
   elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
   eta <- elapsed / step_idx * (total_steps - step_idx)
-  message(sprintf("  → EVT quantiles done in %.2fs (ETA %.2fs)", elapsed, eta))
+  message(sprintf("  -> EVT quantiles done in %.2fs (ETA %.2fs)", elapsed, eta))
 
   step_idx <- step_idx + 1
   message(sprintf("[Predict %d/%d] PAVA monotonicity...", step_idx, total_steps))
@@ -66,7 +66,7 @@ predict.qevt <- function(object, newdata, ...) {
   Q_mono <- t(apply(Q_raw, 1, function(v) apply_pava(object$taus_full, v)))
   colnames(Q_mono) <- as.character(object$taus_full)
   elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
-  message(sprintf("  → done in %.2fs (complete)", elapsed))
+  message(sprintf("  -> done in %.2fs (complete)", elapsed))
   list(
     raw = Q_raw,
     monotone = Q_mono,

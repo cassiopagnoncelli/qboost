@@ -46,6 +46,10 @@ apply_pava_monotonicity <- function(pred_matrix, taus) {
 }
 
 #' Convenience: predict and enforce monotone
+#' @param models List from fit_quantile_models
+#' @param newdata Feature matrix/data.frame
+#' @param taus Quantile levels (in same order used for fitting)
+#' @return Matrix with isotonic-adjusted predictions
 predict_quantiles_monotone <- function(models, newdata, taus) {
   raw <- predict_quantiles_raw(models, newdata, taus)
   apply_pava_monotonicity(raw, taus)

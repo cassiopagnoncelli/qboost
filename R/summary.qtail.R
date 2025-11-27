@@ -175,22 +175,22 @@ print.qtail_summary <- function(x, ...) {
 
     cat("Model Interpretation:\n")
     if (x$tail == "upper") {
-      cat(" • Predicts extreme high values (", format(x$tau_target, digits = 4),
+      cat(" * Predicts extreme high values (", format(x$tau_target, digits = 4),
         " quantile)\n",
         sep = ""
       )
-      cat(" • ", x$evt$n_exceedances, " training points exceed threshold\n", sep = "")
-      cat(" • GPD shape (xi=", format(x$evt$xi, digits = 3),
+      cat(" * ", x$evt$n_exceedances, " training points exceed threshold\n", sep = "")
+      cat(" * GPD shape (xi=", format(x$evt$xi, digits = 3),
         ") indicates tail heaviness\n",
         sep = ""
       )
     } else {
-      cat(" • Predicts extreme low values (", format(x$tau_target, digits = 4),
+      cat(" * Predicts extreme low values (", format(x$tau_target, digits = 4),
         " quantile)\n",
         sep = ""
       )
-      cat(" • ", x$evt$n_exceedances, " training points below threshold\n", sep = "")
-      cat(" • GPD shape (xi=", format(x$evt$xi, digits = 3),
+      cat(" * ", x$evt$n_exceedances, " training points below threshold\n", sep = "")
+      cat(" * GPD shape (xi=", format(x$evt$xi, digits = 3),
         ") indicates tail heaviness\n",
         sep = ""
       )
