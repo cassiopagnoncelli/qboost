@@ -75,16 +75,16 @@ kendall_999
 kendall_9993
 
 # Distributions
-analyse_distribution(exp(actuals))
+dtools::analyse(exp(actuals))
 
 tb %>%
   dplyr::filter(yhat > quantile(yhat, probs = .997)) %>%
   dplyr::pull(y) %>%
   { exp(.) } %>%
-  analyse_distribution()
+  dtools::analyse()
 
 tb %>%
   dplyr::filter(y > quantile(y, probs = .997)) %>%
   dplyr::pull(y) %>%
   { exp(.) } %>%
-  analyse_distribution()
+  dtools::analyse()

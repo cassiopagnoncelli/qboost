@@ -65,16 +65,16 @@ idx <- tb$yhat > quantile(tb$yhat, 0.9995, na.rm = TRUE)
 cor(tb$y[idx], tb$yhat[idx], method = "kendall")
 
 # Distributions
-analyse_distribution(exp(actuals))
+dtools::analyse(exp(actuals))
 
 tb %>%
   dplyr::filter(yhat > quantile(yhat, probs = .999)) %>%
   dplyr::pull(y) %>%
   { exp(.) } %>%
-  analyse_distribution()
+  dtools::analyse()
 
 tb %>%
   dplyr::filter(y > quantile(y, probs = .999)) %>%
   dplyr::pull(y) %>%
   { exp(.) } %>%
-  analyse_distribution()
+  dtools::analyse()
