@@ -33,9 +33,13 @@ fit_gpd <- function(y_tail, u) {
     log_beta <- theta[1]
     xi <- theta[2]
     beta <- exp(log_beta)
-    if (beta <= 0) return(Inf)
+    if (beta <= 0) {
+      return(Inf)
+    }
     t <- 1 + xi * z / beta
-    if (any(t <= 0)) return(Inf)
+    if (any(t <= 0)) {
+      return(Inf)
+    }
     if (abs(xi) < 1e-8) {
       return(length(z) * log(beta) + sum(z) / beta)
     }

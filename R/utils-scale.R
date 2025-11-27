@@ -5,4 +5,3 @@ scale_new_data <- function(new_data, center, scale) {
   # broadcast center/scale correctly
   sweep(sweep(new_data, 2, center, FUN = "-"), 2, scale, FUN = "/")
 }
-

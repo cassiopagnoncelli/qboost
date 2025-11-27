@@ -13,9 +13,11 @@ summary.qevt <- function(object, newdata = NULL, y = NULL, ...) {
   cat(" Sub-quantile grid:", paste(format(object$tau_grid_sub, digits = 4), collapse = ", "), "\n")
   gpd_status <- if (isTRUE(object$gpd$converged)) "converged" else "not converged"
   cat(" GPD: xi=", format(object$gpd$xi, digits = 6),
-      " beta=", format(object$gpd$beta, digits = 6),
-      " n=", object$gpd$n,
-      " status=", gpd_status, "\n", sep = "")
+    " beta=", format(object$gpd$beta, digits = 6),
+    " n=", object$gpd$n,
+    " status=", gpd_status, "\n",
+    sep = ""
+  )
   cat(" Exceedance model: LightGBM binary\n")
   cat(" Sub-quantile models: ", length(object$sub_models), " LightGBM quantile models\n", sep = "")
   # Diagnostics: train by default, or supplied newdata/y

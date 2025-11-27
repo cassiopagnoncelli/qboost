@@ -9,19 +9,20 @@ qtail_pit <- function(object, ...) {
   if (!inherits(object, "qtail")) {
     stop("`object` must be a qtail model.", call. = FALSE)
   }
-  
+
   n <- length(object$y)
   taus <- object$taus
   pit <- numeric(n)
-  
+
   for (i in seq_len(n)) {
     # Predict quantiles for this observation
     qgrid <- numeric(length(taus))
     for (j in seq_along(taus)) {
-      qgrid[j] <- predict.qtail(object, object$x[i, , drop = FALSE], 
-                                 type = "final", tau_override = taus[j])
+      qgrid[j] <- predict.qtail(object, object$x[i, , drop = FALSE],
+        type = "final", tau_override = taus[j]
+      )
     }
-    
+
     # Monotonic interpolation to get PIT value
     # For upper tail: taus increasing, qgrid increasing
     # For lower tail: taus decreasing, but we need to handle this
@@ -32,7 +33,7 @@ qtail_pit <- function(object, ...) {
     } else {
       taus_interp <- taus
     }
-    
+
     # Interpolate with error handling
     pit_val <- tryCatch(
       stats::approx(qgrid, taus_interp, xout = object$y[i], rule = 2)$y,
@@ -41,10 +42,10 @@ qtail_pit <- function(object, ...) {
         NA_real_
       }
     )
-    
+
     # Ensure PIT is within [0, 1]
     pit[i] <- if (!is.na(pit_val)) pmax(0, pmin(1, pit_val)) else NA_real_
   }
-  
+
   return(pit)
 }

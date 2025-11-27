@@ -57,7 +57,7 @@ fit_upper <- qtail(
   params = list(nrounds = 100, nfolds = 5)
 )
 
-# Fit lower tail model  
+# Fit lower tail model
 fit_lower <- qtail(
   x = x,
   y = y,
@@ -168,7 +168,7 @@ Composite stability score:
 stab <- qtail_stability(fit_upper)
 print(stab)
 # $stability: overall score
-# $qce: calibration error  
+# $qce: calibration error
 # $slope: calibration slope
 # $overfit_gap: train-validation gap
 ```

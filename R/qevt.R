@@ -25,7 +25,7 @@ qevt <- function(
   elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
   eta <- elapsed / step_idx * (total_steps - step_idx)
   message(sprintf("  → done in %.2fs (ETA %.2fs)", elapsed, eta))
-  
+
   step_idx <- step_idx + 1
   message(sprintf("[Step %d/%d] Fitting GPD (MLE) and severity fallback...", step_idx, total_steps))
   u <- exceed_fit$u
@@ -41,7 +41,7 @@ qevt <- function(
   elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
   eta <- elapsed / step_idx * (total_steps - step_idx)
   message(sprintf("  → done in %.2fs (ETA %.2fs)", elapsed, eta))
-  
+
   step_idx <- step_idx + 1
   message(sprintf("[Step %d/%d] Training sub-quantile LightGBM models...", step_idx, total_steps))
   sub_models <- fit_subquantile_models(X, y, tau_grid_sub = tau_grid_sub)
@@ -49,7 +49,7 @@ qevt <- function(
   elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
   eta <- elapsed / step_idx * (total_steps - step_idx)
   message(sprintf("  → done in %.2fs (ETA %.2fs)", elapsed, eta))
-  
+
   step_idx <- step_idx + 1
   message(sprintf("[Step %d/%d] Assembling model object...", step_idx, total_steps))
   model <- list(

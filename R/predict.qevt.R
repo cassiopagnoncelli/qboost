@@ -13,7 +13,7 @@ predict.qevt <- function(object, newdata, ...) {
   elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
   eta <- elapsed / step_idx * (total_steps - step_idx)
   message(sprintf("  → done in %.2fs (ETA %.2fs)", elapsed, eta))
-  
+
   step_idx <- step_idx + 1
   message(sprintf("[Predict %d/%d] Sub-quantile predictions...", step_idx, total_steps))
   sub_mat <- predict_subquantiles(object$sub_models, newdata, object$tau_grid_sub)
@@ -27,7 +27,7 @@ predict.qevt <- function(object, newdata, ...) {
   elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
   eta <- elapsed / step_idx * (total_steps - step_idx)
   message(sprintf("  → done in %.2fs (ETA %.2fs)", elapsed, eta))
-  
+
   step_idx <- step_idx + 1
   message(sprintf("[Predict %d/%d] EVT quantiles...", step_idx, total_steps))
   evt_with_fallback <- function(tau) {
@@ -50,7 +50,7 @@ predict.qevt <- function(object, newdata, ...) {
   elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
   eta <- elapsed / step_idx * (total_steps - step_idx)
   message(sprintf("  → EVT quantiles done in %.2fs (ETA %.2fs)", elapsed, eta))
-  
+
   step_idx <- step_idx + 1
   message(sprintf("[Predict %d/%d] PAVA monotonicity...", step_idx, total_steps))
   Q_raw <- cbind(

@@ -14,7 +14,9 @@ fets::add_macro(quotes, macro)
 quotes_fwd_fe <- fets::fe(quotes, inplace = TRUE)
 
 # Decomposition
-mXY <- quotes_fwd_fe$X %>% na.omit() %>% tibble::tibble()
+mXY <- quotes_fwd_fe$X %>%
+  na.omit() %>%
+  tibble::tibble()
 
 decomposed <- fets::decomposeXY(mXY, na.rm.X = TRUE, na.rm.Y = TRUE)
 meta <- decomposed$meta
@@ -29,7 +31,7 @@ train_end <- as.Date("2023-05-31")
 val_end <- as.Date("2024-05-31")
 
 train_full_idx <- which(meta$date <= train_end)
-train_idx <- train_full_idx #%>% sample(100000)
+train_idx <- train_full_idx # %>% sample(100000)
 val_idx <- which(meta$date > train_end & meta$date <= val_end)
 test_idx <- which(meta$date > val_end)
 stages_idx <- c(train_idx, val_idx, test_idx)
@@ -64,7 +66,9 @@ tb <- tibble::tibble(data.frame(y = actuals, yhat = selected_q, e = residuals))
 # Kendall Ordering
 kendall_at <- function(thresh) {
   idx <- tb$yhat > stats::quantile(tb$yhat, thresh, na.rm = TRUE)
-  if (sum(idx, na.rm = TRUE) < 2) return(NA_real_)
+  if (sum(idx, na.rm = TRUE) < 2) {
+    return(NA_real_)
+  }
   suppressWarnings(stats::cor(tb$y[idx], tb$yhat[idx], method = "kendall", use = "pairwise.complete.obs"))
 }
 kendall_998 <- kendall_at(0.998)
@@ -80,11 +84,15 @@ dtools::analyse(exp(actuals))
 tb %>%
   dplyr::filter(yhat > quantile(yhat, probs = .997)) %>%
   dplyr::pull(y) %>%
-  { exp(.) } %>%
+  {
+    exp(.)
+  } %>%
   dtools::analyse()
 
 tb %>%
   dplyr::filter(y > quantile(y, probs = .997)) %>%
   dplyr::pull(y) %>%
-  { exp(.) } %>%
+  {
+    exp(.)
+  } %>%
   dtools::analyse()

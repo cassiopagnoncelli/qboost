@@ -51,8 +51,10 @@ testthat::test_that("qtail with custom taus", {
   y <- x[, 1] + rnorm(100)
 
   custom_taus <- c(0.9, 0.95, 0.99)
-  fit <- suppressWarnings(qtail(x, y, taus = custom_taus, tail = "upper",
-               threshold_tau = 0.95, params = list(nrounds = 15, nfolds = 2)))
+  fit <- suppressWarnings(qtail(x, y,
+    taus = custom_taus, tail = "upper",
+    threshold_tau = 0.95, params = list(nrounds = 15, nfolds = 2)
+  ))
 
   testthat::expect_equal(fit$taus, custom_taus)
   testthat::expect_equal(fit$threshold_tau, 0.95)
@@ -68,7 +70,7 @@ testthat::test_that("qtail handles NA rows with warning", {
   set.seed(321)
   x <- matrix(rnorm(400), ncol = 4)
   y <- x[, 1] + rnorm(100)
-  
+
   x[1:5, 1] <- NA
   y[6:8] <- NA
 
@@ -76,7 +78,7 @@ testthat::test_that("qtail handles NA rows with warning", {
   w <- testthat::capture_warnings(
     fit <- qtail(x, y, tail = "upper", params = list(nrounds = 15, nfolds = 2))
   )
-  
+
   # Check that NA removal warning is present
   testthat::expect_true(any(grepl("Removed .* rows with NA values", w)))
   testthat::expect_equal(fit$n, 92)
@@ -177,7 +179,7 @@ testthat::test_that("predict.qtail lower tail EVT extension is negative", {
   y <- x[, 1] * 2 + rt(100, df = 3)
 
   fit <- suppressWarnings(qtail(x, y, tail = "lower", params = list(nrounds = 20, nfolds = 2)))
-  
+
   preds_stack <- predict(fit, x[1:10, ], type = "stack")
   preds_final <- predict(fit, x[1:10, ], type = "final")
 
@@ -195,9 +197,9 @@ testthat::test_that("summary.qtail produces output", {
   y <- x[, 1] * 2 + rt(100, df = 3)
 
   fit <- suppressWarnings(qtail(x, y, tail = "upper", params = list(nrounds = 20, nfolds = 2)))
-  
+
   output <- capture.output(summary(fit))
-  
+
   testthat::expect_true(length(output) > 0)
   testthat::expect_true(any(grepl("Extreme Quantile Tail Model", output)))
   testthat::expect_true(any(grepl("Tail:", output)))
@@ -216,9 +218,9 @@ testthat::test_that("print.qtail produces output", {
   y <- x[, 1] * 2 + rt(100, df = 3)
 
   fit <- suppressWarnings(qtail(x, y, tail = "upper", params = list(nrounds = 20, nfolds = 2)))
-  
+
   output <- capture.output(print(fit))
-  
+
   testthat::expect_true(length(output) > 0)
   testthat::expect_true(any(grepl("Extreme Quantile Tail Model", output)))
   testthat::expect_true(any(grepl("Tail:", output)))
@@ -270,10 +272,12 @@ testthat::test_that("qtail minimal data still fits", {
   x <- matrix(rnorm(100), ncol = 2)
   y <- x[, 1] + rnorm(50)
 
-  fit <- suppressWarnings(qtail(x, y, tail = "upper",
-               taus = c(0.9, 0.95, 0.99),
-               threshold_tau = 0.95,
-               params = list(nrounds = 10, nfolds = 2)))
+  fit <- suppressWarnings(qtail(x, y,
+    tail = "upper",
+    taus = c(0.9, 0.95, 0.99),
+    threshold_tau = 0.95,
+    params = list(nrounds = 10, nfolds = 2)
+  ))
 
   testthat::expect_s3_class(fit, "qtail")
 })
@@ -289,7 +293,7 @@ testthat::test_that("qtail prediction types produce different results", {
   y <- x[, 1] * 2 + rt(100, df = 3)
 
   fit <- suppressWarnings(qtail(x, y, tail = "upper", params = list(nrounds = 20, nfolds = 2)))
-  
+
   preds_stack <- predict(fit, x[1:5, ], type = "stack")
   preds_final <- predict(fit, x[1:5, ], type = "final")
   evt_ext <- predict(fit, x[1:5, ], type = "evt")
@@ -309,9 +313,9 @@ testthat::test_that("qtail_qce computes calibration error", {
   y <- x[, 1] * 2 + rt(100, df = 3)
 
   fit <- suppressWarnings(qtail(x, y, tail = "upper", params = list(nrounds = 20, nfolds = 2)))
-  
+
   qce <- qtail_qce(fit)
-  
+
   testthat::expect_s3_class(qce, "data.frame")
   testthat::expect_equal(nrow(qce), length(fit$taus))
   testthat::expect_true(all(c("tau", "observed", "qce") %in% names(qce)))
@@ -329,9 +333,9 @@ testthat::test_that("qtail_calibration_slope computes slope", {
   y <- x[, 1] * 2 + rt(100, df = 3)
 
   fit <- suppressWarnings(qtail(x, y, tail = "upper", params = list(nrounds = 20, nfolds = 2)))
-  
+
   slope_data <- qtail_calibration_slope(fit)
-  
+
   testthat::expect_type(slope_data, "list")
   testthat::expect_true(all(c("slope", "intercept", "tau") %in% names(slope_data)))
   testthat::expect_true(is.numeric(slope_data$slope))
@@ -349,9 +353,9 @@ testthat::test_that("qtail_pit computes PIT values", {
   y <- x[, 1] * 2 + rt(100, df = 3)
 
   fit <- suppressWarnings(qtail(x, y, tail = "upper", params = list(nrounds = 20, nfolds = 2)))
-  
+
   pit <- qtail_pit(fit)
-  
+
   testthat::expect_true(is.numeric(pit))
   testthat::expect_length(pit, length(fit$y))
   testthat::expect_true(all(pit >= 0 & pit <= 1))
@@ -368,7 +372,7 @@ testthat::test_that("qtail_pit_plot creates plot", {
   y <- x[, 1] * 2 + rt(100, df = 3)
 
   fit <- suppressWarnings(qtail(x, y, tail = "upper", params = list(nrounds = 20, nfolds = 2)))
-  
+
   # May produce warnings from PIT computation, just check it doesn't error
   testthat::expect_error(suppressWarnings(qtail_pit_plot(fit)), NA)
 })
@@ -384,9 +388,9 @@ testthat::test_that("qtail_stability computes stability metric", {
   y <- x[, 1] * 2 + rt(100, df = 3)
 
   fit <- suppressWarnings(qtail(x, y, tail = "upper", params = list(nrounds = 20, nfolds = 2)))
-  
+
   stab <- qtail_stability(fit)
-  
+
   testthat::expect_type(stab, "list")
   testthat::expect_true(all(c("stability", "qce", "slope", "overfit_gap") %in% names(stab)))
   testthat::expect_true(is.numeric(stab$stability))
@@ -403,13 +407,13 @@ testthat::test_that("qtail_validate works on new data", {
   y <- x[, 1] * 2 + rt(100, df = 3)
 
   fit <- suppressWarnings(qtail(x, y, tail = "upper", params = list(nrounds = 20, nfolds = 2)))
-  
+
   # Create new data
   x_new <- matrix(rnorm(250), ncol = 5)
   y_new <- x_new[, 1] * 2 + rt(50, df = 3)
-  
+
   val <- qtail_validate(fit, x_new, y_new)
-  
+
   testthat::expect_s3_class(val, "data.frame")
   testthat::expect_true(all(c("tau", "observed", "qce") %in% names(val)))
   testthat::expect_true(all(val$qce >= 0))

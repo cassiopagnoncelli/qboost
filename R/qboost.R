@@ -17,7 +17,7 @@
 #'
 #' @return An object of class `qboost`.
 #' @export
-#' 
+#'
 #' @examples
 #' \dontrun{
 #' set.seed(1)
