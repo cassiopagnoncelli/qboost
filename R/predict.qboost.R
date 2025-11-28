@@ -38,8 +38,19 @@ predict.qboost <- function(object, newdata, ...) {
       mf,
       contrasts.arg = object$preprocess$contrasts
     )
+    # Remove intercept column if present (consistent with training)
+    if ("(Intercept)" %in% colnames(newdata)) {
+      newdata <- newdata[, colnames(newdata) != "(Intercept)", drop = FALSE]
+    }
   } else if (!is.matrix(newdata)) {
     newdata <- data.matrix(newdata)
+  }
+
+  # Ensure plain numeric matrix
+  if (is.matrix(newdata)) {
+    feature_names <- colnames(newdata)
+    newdata <- matrix(as.numeric(newdata), nrow = nrow(newdata), ncol = ncol(newdata))
+    colnames(newdata) <- feature_names
   }
 
   .lgb_predict(object$model, newdata)

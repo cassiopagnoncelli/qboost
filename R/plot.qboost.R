@@ -35,7 +35,7 @@ plot.qboost <- function(x, plot = TRUE, top_features = 25, ...) {
   )
 
   if (isTRUE(plot)) {
-    for (p in plots) print(p)
+    for (p in plots) suppressWarnings(print(p))
   }
 
   invisible(plots)

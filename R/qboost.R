@@ -46,8 +46,15 @@ qboost <- function(
   y <- as.numeric(parsed$y)
   extra_args <- parsed$extra_args
 
+  # Always convert to plain numeric matrix to strip any special attributes
+  # from model.matrix() that lightgbm cannot handle
+  feature_names <- colnames(x)
   if (!is.matrix(x)) {
     x <- data.matrix(x)
+  } else {
+    # Strip all attributes and create a fresh plain numeric matrix
+    x <- matrix(as.numeric(x), nrow = nrow(x), ncol = ncol(x))
+    colnames(x) <- feature_names
   }
   parsed$preprocess$feature_names <- colnames(x)
   if (nrow(x) != length(y)) {
@@ -179,6 +186,10 @@ qboost <- function(
     mf <- stats::model.frame(formula, data = data, na.action = stats::na.pass)
     y <- stats::model.response(mf)
     mm <- stats::model.matrix(formula, mf)
+    # Remove intercept column if present (LightGBM doesn't need it)
+    if ("(Intercept)" %in% colnames(mm)) {
+      mm <- mm[, colnames(mm) != "(Intercept)", drop = FALSE]
+    }
     terms_obj <- stats::terms(mf)
 
     preprocess <- list(

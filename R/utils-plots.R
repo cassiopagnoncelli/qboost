@@ -6,7 +6,7 @@
 plot_pinball_loss <- function(df) {
   ggplot2::ggplot(df, ggplot2::aes(x = predicted, y = residual)) +
     ggplot2::geom_point(alpha = 0.6, color = "#1f78b4") +
-    ggplot2::geom_smooth(method = "loess", se = FALSE, color = "#b2df8a") +
+    suppressWarnings(ggplot2::geom_smooth(method = "loess", se = FALSE, color = "#b2df8a")) +
     ggplot2::labs(
       title = "Pinball residuals",
       x = "Predicted quantile",
