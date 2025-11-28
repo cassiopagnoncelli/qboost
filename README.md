@@ -1,4 +1,4 @@
-# qboost: Quantile Gradient Boosting Models in R
+# qboost: Quantile Gradient Boosting Models
 
 [![R](https://img.shields.io/badge/R-%3E%3D4.1.0-blue.svg)](https://www.r-project.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -133,7 +133,7 @@ MIT License. See LICENSE file for details.
 If you use this package in your research, please cite:
 
 ```
-Pagnoncelli, C. (2025). qboost: Quantile Gradient Boosting Models in R. 
+Pagnoncelli, C. (2025). qboost: Quantile Gradient Boosting Models.
 R package version 0.4.7.
 ```
 

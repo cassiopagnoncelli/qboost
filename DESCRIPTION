@@ -1,11 +1,11 @@
 Package: qboost
 Type: Package
-Title: Quantile Gradient Boosting Models in R
-Version: 0.4.8
+Title: Quantile Gradient Boosting Models
+Version: 0.4.9
 Authors@R:
     person("Cassio", "Pagnoncelli", , "cassiopagnoncelli@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0009-0000-7114-7008"))
-Description: High-level quantile regression using LightGBM with clean S3 API, 
+Description: High-level quantile regression using `LightGBM` with clean S3 API, 
     diagnostics, calibration analysis, plots, and model summaries.
 License: MIT + file LICENSE
 Encoding: UTF-8
