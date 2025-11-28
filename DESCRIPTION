@@ -1,12 +1,18 @@
 Package: qboost
 Type: Package
 Title: Quantile Gradient Boosting Models
-Version: 0.4.9
+Version: 0.4.8
 Authors@R:
     person("Cassio", "Pagnoncelli", , "cassiopagnoncelli@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0009-0000-7114-7008"))
-Description: High-level quantile regression using `LightGBM` with clean S3 API, 
-    diagnostics, calibration analysis, plots, and model summaries.
+Description: Quantile regression suite using LightGBM gradient boosting. 
+    'qboost()' fits standard quantile regression with cross-validation and 
+    early stopping. 'qtail()' models extreme quantiles via stacked architecture: 
+    ensemble of qboost base learners combined through elastic net, extended to 
+    tail region using Generalized Pareto Distribution from Extreme Value Theory. 
+    'qevt()' detects extreme events using threshold exceedance models and GPD. 
+    Includes calibration diagnostics (coverage, QCE, PIT), PAVA monotonicity 
+    enforcement, formula and matrix interfaces, and S3 methods.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyLoad: no
