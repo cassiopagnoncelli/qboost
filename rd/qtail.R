@@ -1,86 +1,48 @@
+# Load package
 devtools::load_all()
 
-# ETL.
-quotes <- qetl::get_sample_quotes()
-macro <- fets::macro()
+set.seed(123)
 
-# Forward lookahead
-fets::fwd(quotes, lookahead = 20, inplace = TRUE)
+# Generate data with heavy tails
+n <- 10000
 
-# Add macro indicators
-fets::add_macro(quotes, macro)
+df <- tibble::tibble(
+  x1 = rnorm(n),
+  x2 = rnorm(n),
+  x3 = runif(n, -2, 2),
+  y = 2 * x1 - 0.5 * x2 + 0.3 * x3 + 2 * rt(n, df = 3)
+)
 
-# Engineer features based on current series solely
-quotes_fwd_fe <- fets::fe(quotes, inplace = TRUE)
+# Train/test split
+train_idx <- seq_len(ceiling(.7 * n))
+test_idx <- seq(max(train_idx) + 1, n)
 
-# Decomposition
-mXY <- quotes_fwd_fe$X %>%
-  na.omit() %>%
-  tibble::tibble()
+# Fit qtail model for upper tail
+fit <- qtail(
+  y ~ .,
+  data = df[train_idx, ],
+  tail = "upper",
+  taus = c(0.95, 0.98, 0.99, 0.995),
+  threshold_tau = 0.98,
+  params = list(nrounds = 100, nfolds = 5),
+  verbose = TRUE
+)
 
-decomposed <- fets::decomposeXY(mXY, na.rm.X = TRUE, na.rm.Y = TRUE)
-meta <- decomposed$meta
-close <- decomposed$close
-volume <- decomposed$volume
-Y <- decomposed$Y
-X <- decomposed$X %>% dplyr::select(-matches("^(smoothed_close)"))
-y <- log(Y$excursion_high)
-
-# Splits
-train_end <- as.Date("2023-05-31")
-val_end <- as.Date("2024-05-31")
-
-train_full_idx <- which(meta$date <= train_end)
-train_idx <- train_full_idx # %>% sample(100000)
-val_idx <- which(meta$date > train_end & meta$date <= val_end)
-test_idx <- which(meta$date > val_end)
-stages_idx <- c(train_idx, val_idx, test_idx)
-
-zX <- scale(X[train_idx, ])
-zX_centers <- attr(zX, "scaled:center")
-zX_scales <- attr(zX, "scaled:scale")
-zX <- tibble::as_tibble(scale_new_data(X, center = zX_centers, scale = zX_scales))
-
-mzX <- tibble::tibble(meta, zX)
-mczXY <- tibble::tibble(meta, close, zX, Y)
-zXY <- tibble::tibble(zX, Y)
-
-# Qtail.
-fit <- qtail(X[train_idx, ], y[train_idx], tail = "upper", verbose = TRUE)
-
+# Model summary and diagnostics
 summary(fit)
 
-preds <- predict(fit, newdata = X[-train_idx, ], type = "final", tau_override = 0.999)
-actuals <- y[-train_idx]
-residuals <- actuals - preds
+plot(fit)
 
-tb <- tibble::tibble(data.frame(y = actuals, yhat = preds, e = residuals))
+# Predictions at various quantiles
+preds_95 <- predict(fit, newdata = df[test_idx, ], tau = 0.95)
+preds_99 <- predict(fit, newdata = df[test_idx, ], tau = 0.99)
+preds_extreme <- predict(fit, newdata = df[test_idx, ], tau = 0.9993) # EVT extrapolation
 
-# Kendall Ordering
-idx <- tb$yhat > quantile(tb$yhat, 0.998, na.rm = TRUE)
-cor(tb$y[idx], tb$yhat[idx], method = "kendall")
+# Evaluate coverage
+cat("\nTest Set Coverage:\n")
+cat("tau=0.95 :", mean(df$y[test_idx] <= preds_95), "\n")
+cat("tau=0.99 :", mean(df$y[test_idx] <= preds_99), "\n")
 
-idx <- tb$yhat > quantile(tb$yhat, 0.999, na.rm = TRUE)
-cor(tb$y[idx], tb$yhat[idx], method = "kendall")
-
-idx <- tb$yhat > quantile(tb$yhat, 0.9995, na.rm = TRUE)
-cor(tb$y[idx], tb$yhat[idx], method = "kendall")
-
-# Distributions
-dtools::analyse(exp(actuals))
-
-tb %>%
-  dplyr::filter(yhat > quantile(yhat, probs = .999)) %>%
-  dplyr::pull(y) %>%
-  {
-    exp(.)
-  } %>%
-  dtools::analyse()
-
-tb %>%
-  dplyr::filter(y > quantile(y, probs = .999)) %>%
-  dplyr::pull(y) %>%
-  {
-    exp(.)
-  } %>%
-  dtools::analyse()
+# Tail parameters
+cat("\nGPD tail parameters (xi, beta):", fit$evt$xi, fit$evt$beta, "\n")
+cat("Number of exceedances:", fit$evt$n_exceedances, "\n")
