@@ -33,16 +33,9 @@ summary(fit)
 
 plot(fit)
 
-# Predictions at various quantiles
-preds_95 <- predict(fit, newdata = df[test_idx, ], tau = 0.95)
-preds_99 <- predict(fit, newdata = df[test_idx, ], tau = 0.99)
-preds_extreme <- predict(fit, newdata = df[test_idx, ], tau = 0.9993) # EVT extrapolation
+# Predictions
+tau = 0.993
+q <- quantile(predict(fit, newdata = df[train_idx, ], tau = tau), tau)
 
-# Evaluate coverage
-cat("\nTest Set Coverage:\n")
-cat("tau=0.95 :", mean(df$y[test_idx] <= preds_95), "\n")
-cat("tau=0.99 :", mean(df$y[test_idx] <= preds_99), "\n")
-
-# Tail parameters
-cat("\nGPD tail parameters (xi, beta):", fit$evt$xi, fit$evt$beta, "\n")
-cat("Number of exceedances:", fit$evt$n_exceedances, "\n")
+preds <- predict(fit, newdata = df[train_idx, ], tau = tau) # EVT extrapolation
+sum(preds_extreme > preds_993q)
