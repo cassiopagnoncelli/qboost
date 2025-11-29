@@ -4,13 +4,13 @@
 #' @param detailed Logical; if TRUE, print extended diagnostics (default TRUE)
 #' @param newdata Optional feature matrix for out-of-sample evaluation
 #' @param y Optional outcomes aligned with `newdata`
-#' @param top_features Integer; number of top features to show in importance table (default 10)
+#' @param top_features Integer; number of top features to show in importance table (default Inf shows all)
 #' @param ... unused
 #'
 #' @return An object of class qevt_summary (invisibly)
 #' @export
 summary.qevt <- function(object, detailed = TRUE, newdata = NULL, y = NULL, 
-                         top_features = 10, ...) {
+                         top_features = Inf, ...) {
   if (!inherits(object, "qevt")) {
     stop("`object` must be a qevt model.", call. = FALSE)
   }
@@ -243,15 +243,19 @@ print.qevt_summary <- function(x, ...) {
     # Feature importance
     if (!is.null(x$importance) && nrow(x$importance) > 0) {
       cat("Feature Importance (averaged across sub-quantile models)\n")
-      top <- utils::head(x$importance, min(x$top_features, nrow(x$importance)))
-      top$share_pct <- sprintf("%.1f%%", top$share_gain * 100)
-      cat(" Top ", nrow(top), " features:\n", sep = "")
-      for (i in seq_len(nrow(top))) {
-        cat("  ", format(i, width = 2), ". ",
-            format(top$feature[i], width = 20), " ",
-            format(top$gain[i], digits = 4, width = 10), " ",
-            "(", top$share_pct[i], ")\n", sep = "")
-      }
+      n_show <- if (is.finite(x$top_features)) min(x$top_features, nrow(x$importance)) else nrow(x$importance)
+      top <- utils::head(x$importance, n_show)
+      top$share_pct <- top$share_gain * 100
+      
+      # Create formatted tibble for display
+      imp_tbl <- tibble::tibble(
+        rank = seq_len(nrow(top)),
+        feature = top$feature,
+        gain = top$gain,
+        share_pct = top$share_pct
+      )
+      
+      print(imp_tbl, n = Inf)
       cat("\n")
     }
     

@@ -52,9 +52,6 @@ plot.qevt <- function(x, newdata = NULL, obs = 1, ...) {
   covered <- as.numeric(x$train_y[obs] <= q_target)
   mtext(sprintf("cover@%.4f=%d", target_tau, covered), side = 3, line = -2, adj = 1, cex = 0.8)
   
-  cat("Press [Enter] to see next plot...")
-  readline()
-  
   # Plot 2: Tail focus
   plot(taus[tail_idx], q_mono[tail_idx],
     type = "b",
@@ -67,9 +64,6 @@ plot.qevt <- function(x, newdata = NULL, obs = 1, ...) {
   points(taus[tail_idx], q_raw[tail_idx], col = "gray60", pch = 16)
   legend("topleft", legend = c("raw", "monotone"), col = c("gray60", "red"), pch = c(16, 17), bty = "n")
   
-  cat("Press [Enter] to see next plot...")
-  readline()
-  
   # Plot 3: Exceedance probability gauge
   plot(0, 0,
     type = "n",
@@ -81,9 +75,6 @@ plot.qevt <- function(x, newdata = NULL, obs = 1, ...) {
   segments(0, 0.5, p_exc, 0.5, lwd = 6, col = "darkgreen")
   axis(1, at = c(0, 0.5, 1), labels = c("0", "0.5", "1"))
   text(p_exc, 0.7, labels = sprintf("p=%.3f", p_exc))
-  
-  cat("Press [Enter] to see next plot...")
-  readline()
   
   # Plot 4: EVT/GPD tail curve (fallback to severity if needed)
   tail_taus <- seq(x$tau0, x$tau_target, length.out = 100)
@@ -107,14 +98,8 @@ plot.qevt <- function(x, newdata = NULL, obs = 1, ...) {
   )
   abline(v = x$tau0, col = "gray", lty = 3)
   
-  cat("Press [Enter] to see next plot...")
-  readline()
-  
   # Plot 5: PIT histogram
   pit_plot_qevt(x)
-  
-  cat("Press [Enter] to see next plot...")
-  readline()
   
   # Plot 6: QQ plot
   qq_plot_qevt(x)
