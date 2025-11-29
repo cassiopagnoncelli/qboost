@@ -63,6 +63,9 @@ predict.qevt <- function(object, newdata, ...) {
   step_idx <- step_idx + 1
   message(sprintf("[Predict %d/%d] Sub-quantile predictions...", step_idx, total_steps))
   sub_mat <- predict_subquantiles(object$sub_models, newdata, object$tau_grid_sub)
+  # Keep only columns for taus that are < tau0 (to match taus_full structure)
+  sub_cols_keep <- object$tau_grid_sub < object$tau0
+  sub_mat <- sub_mat[, sub_cols_keep, drop = FALSE]
   n <- nrow(sub_mat)
   use_gpd <- isTRUE(object$gpd$converged) && is.finite(object$gpd$xi) &&
     is.finite(object$gpd$beta) && object$gpd$beta > 0

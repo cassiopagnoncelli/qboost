@@ -75,7 +75,10 @@ qevt <- function(
   step_idx <- step_idx + 1
   message(sprintf("[Step %d/%d] Training sub-quantile LightGBM models...", step_idx, total_steps))
   sub_models <- fit_subquantile_models(X, y, tau_grid_sub = tau_grid_sub)
-  taus_full <- c(tau_grid_sub, tau0, taus_evt, tau_target)
+  # Build full tau grid: sub-quantiles, then EVT taus (tau0 + intermediates), then target
+  # Remove tau0 from tau_grid_sub if present to avoid duplicates
+  tau_grid_sub_clean <- tau_grid_sub[tau_grid_sub < tau0]
+  taus_full <- c(tau_grid_sub_clean, tau0, taus_evt, tau_target)
   elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
   eta <- elapsed / step_idx * (total_steps - step_idx)
   message(sprintf("  -> done in %.2fs (ETA %.2fs)", elapsed, eta))
