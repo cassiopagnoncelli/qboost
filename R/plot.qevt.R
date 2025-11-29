@@ -18,7 +18,9 @@ plot.qevt <- function(x, newdata = NULL, obs = 1, ...) {
   q_raw <- preds$raw[obs, ]
   q_mono <- preds$monotone[obs, ]
   taus <- preds$taus
-  tail_idx <- seq.int(length(taus) - 4, length(taus))
+  # Tail indices: tau0 + taus_evt + tau_target
+  n_tail <- 1 + length(x$taus_evt) + 1
+  tail_idx <- seq.int(length(taus) - n_tail + 1, length(taus))
   p_exc_vec <- predict_exceedance(x$exceed_model, data_use)
   p_exc <- p_exc_vec[obs]
   severity_pred <- NA_real_

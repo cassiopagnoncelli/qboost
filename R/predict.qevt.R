@@ -90,9 +90,7 @@ predict.qevt <- function(object, newdata, ...) {
     q_evt
   }
   q_evt_tau0 <- rep(object$u, n)
-  q_evt_tau1 <- evt_with_fallback(object$tau1)
-  q_evt_tau2 <- evt_with_fallback(object$tau2)
-  q_evt_tau3 <- evt_with_fallback(object$tau3)
+  q_evt_intermediate <- lapply(object$taus_evt, evt_with_fallback)
   q_evt_target <- evt_with_fallback(object$tau_target)
   elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
   eta <- elapsed / step_idx * (total_steps - step_idx)
@@ -103,9 +101,7 @@ predict.qevt <- function(object, newdata, ...) {
   Q_raw <- cbind(
     sub_mat,
     q_evt_tau0,
-    q_evt_tau1,
-    q_evt_tau2,
-    q_evt_tau3,
+    do.call(cbind, q_evt_intermediate),
     q_evt_target
   )
   colnames(Q_raw) <- as.character(object$taus_full)

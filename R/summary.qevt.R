@@ -7,21 +7,10 @@
 #' @export
 summary.qevt <- function(object, newdata = NULL, y = NULL, ...) {
   cat("qevt: Extreme Quantile Model\n")
-  cat(" Threshold tau0:", sprintf("%.4f", object$tau0), "\n")
+  cat(" EVT taus:", paste(format(object$taus, digits = 4), collapse = ", "), "\n")
+  cat(" Threshold (tau0):", sprintf("%.4f", object$tau0), "\n")
   cat(" u:", format(object$u, digits = 6), "\n")
-  taus_str <- paste(
-    format(
-      c(
-        object$tau1,
-        object$tau2,
-        object$tau3,
-        object$tau_target
-      ),
-      digits = 6
-    ),
-    collapse = ", "
-  )
-  cat(" Tail taus:", taus_str, "\n")
+  cat(" Target tau:", sprintf("%.4f", object$tau_target), "\n")
   cat(" Sub-quantile grid:", paste(format(object$tau_grid_sub, digits = 4), collapse = ", "), "\n")
   gpd_status <- if (isTRUE(object$gpd$converged)) "converged" else "not converged"
   cat(" GPD: xi=", format(object$gpd$xi, digits = 6),

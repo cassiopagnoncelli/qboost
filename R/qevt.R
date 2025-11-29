@@ -7,10 +7,8 @@
 #' @param ... Either a formula and optional `data` argument or an `x`/`y` pair
 #'   followed by additional arguments.
 #' @param tau_target Final extreme tau (default 0.9999)
-#' @param tau0 Threshold quantile for EVT (default 0.997)
-#' @param tau1 Intermediate EVT quantile (default 0.9985)
-#' @param tau2 Intermediate EVT quantile (default 0.999)
-#' @param tau3 Intermediate EVT quantile (default 0.9993)
+#' @param taus Vector of EVT quantiles including threshold and intermediate values
+#'   (default c(0.997, 0.9985, 0.999, 0.9993)). The first value is the EVT threshold.
 #' @return Object of class 'qevt'
 #' @export
 #'
@@ -34,10 +32,7 @@
 qevt <- function(
     ...,
     tau_target = 0.9999,
-    tau0 = 0.997,
-    tau1 = 0.9985,
-    tau2 = 0.999,
-    tau3 = 0.9993) {
+    taus = c(0.997, 0.9985, 0.999, 0.9993)) {
   # Parse inputs
   parsed <- .parse_qevt_inputs(list(...))
   X <- if (!is.matrix(parsed$x)) data.matrix(parsed$x) else parsed$x
@@ -46,6 +41,10 @@ qevt <- function(
   if (nrow(X) != length(y)) {
     stop("`x` and `y` must have compatible dimensions.", call. = FALSE)
   }
+
+  # Extract tau0 as the first tau (EVT threshold)
+  tau0 <- taus[1]
+  taus_evt <- if (length(taus) > 1) taus[-1] else numeric(0)
 
   total_steps <- 4
   step_idx <- 1
@@ -76,7 +75,7 @@ qevt <- function(
   step_idx <- step_idx + 1
   message(sprintf("[Step %d/%d] Training sub-quantile LightGBM models...", step_idx, total_steps))
   sub_models <- fit_subquantile_models(X, y, tau_grid_sub = tau_grid_sub)
-  taus_full <- c(tau_grid_sub, tau0, tau1, tau2, tau3, tau_target)
+  taus_full <- c(tau_grid_sub, tau0, taus_evt, tau_target)
   elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
   eta <- elapsed / step_idx * (total_steps - step_idx)
   message(sprintf("  -> done in %.2fs (ETA %.2fs)", elapsed, eta))
@@ -89,10 +88,9 @@ qevt <- function(
     severity_model = severity_model,
     sub_models = sub_models,
     tau_grid_sub = tau_grid_sub,
+    taus = taus,
     tau0 = tau0,
-    tau1 = tau1,
-    tau2 = tau2,
-    tau3 = tau3,
+    taus_evt = taus_evt,
     tau_target = tau_target,
     u = u,
     taus_full = taus_full,

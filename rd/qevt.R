@@ -16,11 +16,12 @@ df <- tibble::tibble(
 train_idx <- seq_len(ceiling(.7 * n))
 test_idx <- seq(max(train_idx) + 1, n)
 
-# Fit qevt model for extreme quantiles
+# Fit EVT model
 fit <- qevt(
   y ~ .,
   data = df,
-  tau_target = 0.9999
+  tau_target = 0.995,
+  taus = c(0.95, 0.98, 0.99)
 )
 
 # Model summary and diagnostics
