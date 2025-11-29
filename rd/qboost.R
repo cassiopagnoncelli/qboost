@@ -1,19 +1,16 @@
 devtools::load_all()
 
-set.seed(1)
+set.seed(123)
 
-# Example data
+# Generate data with heavy tails
+n <- 10000
 
-n <- 500
-df <- data.frame(
+df <- tibble::tibble(
   x1 = rnorm(n),
-  x2 = runif(n),
-  x3 = rnorm(n)
+  x2 = rnorm(n),
+  x3 = runif(n, -2, 2),
+  y = 2 * x1 - 0.5 * x2^2 + 0.3 * x3 + 2 * rt(n, df = 3)
 )
-
-df$y <- 0.7 * sin(df$x1) - 0.3 * df$x2 + 0.4 * df$x3^2 + rnorm(n, sd = 0.8)
-
-head(df)
 
 # Fit a non-linear quantile model
 fit <- qboost(
