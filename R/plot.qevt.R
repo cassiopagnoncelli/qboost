@@ -106,6 +106,18 @@ plot.qevt <- function(x, newdata = NULL, obs = 1, ...) {
     main = if (use_gpd) "GPD tail curve" else "Tail curve (fallback)"
   )
   abline(v = x$tau0, col = "gray", lty = 3)
+  
+  cat("Press [Enter] to see next plot...")
+  readline()
+  
+  # Plot 5: PIT histogram
+  pit_plot_qevt(x)
+  
+  cat("Press [Enter] to see next plot...")
+  readline()
+  
+  # Plot 6: QQ plot
+  qq_plot_qevt(x)
 
   invisible(NULL)
 }
