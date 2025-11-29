@@ -6,19 +6,23 @@
 \usage{
 \method{plot}{qtail}(
   x,
-  type = c("calibration", "stack_coeffs", "evt_tail", "gpd_qq", "residuals"),
+  type = c("all", "calibration", "stack_coeffs", "evt_tail", "gpd_qq", "residuals",
+    "coverage"),
+  plot = TRUE,
   ...
 )
 }
 \arguments{
 \item{x}{A qtail object}
 
-\item{type}{Type of plot to produce}
+\item{type}{Type of plot to produce. If "all" (default), produces all diagnostic plots.}
+
+\item{plot}{Logical; if TRUE, plots are printed. If FALSE, returns list of plots.}
 
 \item{...}{Additional arguments passed to plotting functions}
 }
 \value{
-NULL (invisibly)
+If plot=FALSE, a list of ggplot objects. Otherwise NULL (invisibly).
 }
 \description{
 Plot method for qtail

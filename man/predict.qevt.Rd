@@ -9,7 +9,9 @@
 \arguments{
 \item{object}{qevt model}
 
-\item{newdata}{Feature matrix/data.frame}
+\item{newdata}{New data.frame or matrix of predictors. For models fit with a
+formula, a data.frame with the same predictor columns used at training
+time is expected.}
 
 \item{...}{unused}
 }

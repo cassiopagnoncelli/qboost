@@ -1,6 +1,11 @@
 #' Fit extreme quantile model with EVT and PAVA monotonicity
-#' @param X Feature matrix/data.frame
-#' @param y Numeric response
+#'
+#' Provides a clean interface for extreme quantile modeling using
+#' LightGBM quantile regression combined with Extreme Value Theory (EVT).
+#' Accepts either a formula + data or an `x`/`y` pair.
+#'
+#' @param ... Either a formula and optional `data` argument or an `x`/`y` pair
+#'   followed by additional arguments.
 #' @param tau_target Final extreme tau (default 0.9999)
 #' @param tau0 Threshold quantile for EVT (default 0.997)
 #' @param tau1 Intermediate EVT quantile (default 0.9985)
@@ -8,14 +13,40 @@
 #' @param tau3 Intermediate EVT quantile (default 0.9993)
 #' @return Object of class 'qevt'
 #' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Using formula interface
+#' set.seed(123)
+#' df <- data.frame(
+#'   x1 = rnorm(200),
+#'   x2 = rnorm(200)
+#' )
+#' df$y <- df$x1 * 2 + df$x2 * 0.5 + rt(200, df = 3) * 2
+#'
+#' fit <- qevt(y ~ x1 + x2, data = df)
+#'
+#' # Using x/y interface
+#' x <- as.matrix(df[, c("x1", "x2")])
+#' y <- df$y
+#' fit <- qevt(x, y)
+#' }
 qevt <- function(
-    X,
-    y,
+    ...,
     tau_target = 0.9999,
     tau0 = 0.997,
     tau1 = 0.9985,
     tau2 = 0.999,
     tau3 = 0.9993) {
+  # Parse inputs
+  parsed <- .parse_qevt_inputs(list(...))
+  X <- if (!is.matrix(parsed$x)) data.matrix(parsed$x) else parsed$x
+  y <- as.numeric(parsed$y)
+
+  if (nrow(X) != length(y)) {
+    stop("`x` and `y` must have compatible dimensions.", call. = FALSE)
+  }
+
   total_steps <- 4
   step_idx <- 1
   t0 <- Sys.time()
@@ -66,10 +97,96 @@ qevt <- function(
     u = u,
     taus_full = taus_full,
     train_x = X,
-    train_y = y
+    train_y = y,
+    preprocess = parsed$preprocess
   )
   class(model) <- "qevt"
   elapsed <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
   message(sprintf("  -> done in %.2fs (complete)", elapsed))
   model
+}
+
+# Parse qevt inputs (formula or x/y) - similar to qboost/qtail
+.parse_qevt_inputs <- function(dots) {
+  if (length(dots) == 0) {
+    stop("Provide either a formula or an `x`/`y` pair.", call. = FALSE)
+  }
+
+  nm <- names(dots)
+  if (is.null(nm)) {
+    nm <- rep("", length(dots))
+  }
+  nm[is.na(nm)] <- ""
+
+  is_formula <- vapply(dots, inherits, logical(1), what = "formula")
+  if (any(is_formula)) {
+    formula_idx <- which(is_formula)[1]
+    formula <- dots[[formula_idx]]
+
+    data_idx <- integer(0)
+    if ("data" %in% nm) {
+      data_idx <- which(nm == "data")[1]
+    } else {
+      unnamed <- which(!nzchar(nm))
+      unnamed <- unnamed[unnamed != formula_idx]
+      if (length(unnamed) > 0) {
+        data_idx <- unnamed[1]
+      }
+    }
+
+    data <- if (length(data_idx) > 0) dots[[data_idx]] else NULL
+
+    mf <- stats::model.frame(formula, data = data, na.action = stats::na.pass)
+    y <- stats::model.response(mf)
+    mm <- stats::model.matrix(formula, mf)
+    # Remove intercept column if present (LightGBM doesn't need it)
+    if ("(Intercept)" %in% colnames(mm)) {
+      mm <- mm[, colnames(mm) != "(Intercept)", drop = FALSE]
+    }
+    terms_obj <- stats::terms(mf)
+
+    preprocess <- list(
+      type = "formula",
+      terms = terms_obj,
+      xlevels = stats::.getXlevels(terms_obj, mf),
+      contrasts = attr(mm, "contrasts"),
+      formula = formula,
+      feature_names = colnames(mm)
+    )
+
+    extra_idx <- setdiff(seq_along(dots), c(formula_idx, data_idx))
+    extra_args <- if (length(extra_idx) > 0) dots[extra_idx] else list()
+
+    return(list(
+      x = mm,
+      y = y,
+      extra_args = extra_args,
+      preprocess = preprocess
+    ))
+  }
+
+  x_idx <- if ("x" %in% nm) which(nm == "x")[1] else 1L
+  remaining <- setdiff(seq_along(dots), x_idx)
+  if (length(remaining) == 0) {
+    stop("`y` must be provided when using `x`/`y` inputs.", call. = FALSE)
+  }
+  y_idx <- if ("y" %in% nm) which(nm == "y")[1] else remaining[1]
+
+  x <- dots[[x_idx]]
+  y <- dots[[y_idx]]
+
+  extra_idx <- setdiff(seq_along(dots), c(x_idx, y_idx))
+  extra_args <- if (length(extra_idx) > 0) dots[extra_idx] else list()
+
+  preprocess <- list(
+    type = "xy",
+    feature_names = colnames(x)
+  )
+
+  list(
+    x = x,
+    y = y,
+    extra_args = extra_args,
+    preprocess = preprocess
+  )
 }

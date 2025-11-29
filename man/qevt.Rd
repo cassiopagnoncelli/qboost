@@ -5,8 +5,7 @@
 \title{Fit extreme quantile model with EVT and PAVA monotonicity}
 \usage{
 qevt(
-  X,
-  y,
+  ...,
   tau_target = 0.9999,
   tau0 = 0.997,
   tau1 = 0.9985,
@@ -15,9 +14,8 @@ qevt(
 )
 }
 \arguments{
-\item{X}{Feature matrix/data.frame}
-
-\item{y}{Numeric response}
+\item{...}{Either a formula and optional \code{data} argument or an \code{x}/\code{y} pair
+followed by additional arguments.}
 
 \item{tau_target}{Final extreme tau (default 0.9999)}
 
@@ -33,5 +31,25 @@ qevt(
 Object of class 'qevt'
 }
 \description{
-Fit extreme quantile model with EVT and PAVA monotonicity
+Provides a clean interface for extreme quantile modeling using
+LightGBM quantile regression combined with Extreme Value Theory (EVT).
+Accepts either a formula + data or an \code{x}/\code{y} pair.
+}
+\examples{
+\dontrun{
+# Using formula interface
+set.seed(123)
+df <- data.frame(
+  x1 = rnorm(200),
+  x2 = rnorm(200)
+)
+df$y <- df$x1 * 2 + df$x2 * 0.5 + rt(200, df = 3) * 2
+
+fit <- qevt(y ~ x1 + x2, data = df)
+
+# Using x/y interface
+x <- as.matrix(df[, c("x1", "x2")])
+y <- df$y
+fit <- qevt(x, y)
+}
 }
