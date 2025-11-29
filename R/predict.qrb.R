@@ -1,6 +1,6 @@
-#' Predict from a `qboost` model
+#' Predict from a `qrb` model
 #'
-#' @param object A fitted `qboost` object.
+#' @param object A fitted `qrb` object.
 #' @param newdata New data.frame or matrix of predictors. For models fit with a
 #'   formula, a data.frame with the same predictor columns used at training
 #'   time is expected.
@@ -8,10 +8,10 @@
 #'
 #' @return Numeric vector of predicted quantiles.
 #' @export
-#' @method predict qboost
-predict.qboost <- function(object, newdata, ...) {
-  if (!inherits(object, "qboost")) {
-    stop("`object` must be a qboost model.", call. = FALSE)
+#' @method predict qrb
+predict.qrb <- function(object, newdata, ...) {
+  if (!inherits(object, "qrb")) {
+    stop("`object` must be a qrb model.", call. = FALSE)
   }
   if (missing(newdata)) {
     stop("`newdata` is required for prediction.", call. = FALSE)

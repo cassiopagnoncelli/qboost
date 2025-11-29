@@ -109,7 +109,7 @@ print.qtail_summary <- function(x, ...) {
     cat(" Quantile grid:    ", paste(format(x$taus, digits = 4), collapse = ", "), "\n\n", sep = "")
 
     cat("Stacking Architecture\n")
-    cat(" Base models:      ", length(x$taus), " qboost quantile models\n", sep = "")
+    cat(" Base models:      ", length(x$taus), " qrb quantile models\n", sep = "")
     cat(" Meta-learner:     Ridge regression (alpha=0)\n")
     cat(" Lambda (CV):      ", format(x$stack_lambda, digits = 6), "\n", sep = "")
     cat(" Coefficients:\n")

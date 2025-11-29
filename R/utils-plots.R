@@ -52,7 +52,7 @@ plot_calibration_curve <- function(df) {
 
 #' Feature importance plot
 #'
-#' @param df Data frame returned by `importance.qboost()`.
+#' @param df Data frame returned by `importance.qrb()`.
 #' @param top_n Maximum number of features to display.
 #' @return A `ggplot` object.
 #' @keywords internal

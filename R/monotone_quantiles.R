@@ -3,13 +3,13 @@
 #' @param y Numeric target
 #' @param taus Numeric vector of quantile levels
 #' @param params List of LightGBM parameters (per model)
-#' @param ... Extra args to qboost
+#' @param ... Extra args to qrb
 #' @return Named list of models keyed by tau
 fit_quantile_models <- function(x, y, taus, params = list(), ...) {
   models <- vector("list", length(taus))
   for (i in seq_along(taus)) {
     tau <- taus[i]
-    models[[i]] <- qboost(x, y, tau = tau, params = params, ...)
+    models[[i]] <- qrb(x, y, tau = tau, params = params, ...)
     names(models)[i] <- as.character(tau)
   }
   models

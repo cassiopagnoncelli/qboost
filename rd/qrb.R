@@ -13,7 +13,7 @@ df <- tibble::tibble(
 )
 
 # Fit a non-linear quantile model
-fit <- qboost(
+fit <- qrb(
   y ~ .,
   data = df,
   tau = 0.94,
