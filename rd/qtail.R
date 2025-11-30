@@ -33,7 +33,7 @@ summary(fit)
 plot(fit)
 
 # Predictions
-tau = 0.993
+tau <- 0.993
 q <- quantile(predict(fit, newdata = df[train_idx, ], tau = tau), tau)
 
 preds <- predict(fit, newdata = df[train_idx, ], tau = tau) # EVT extrapolation

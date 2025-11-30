@@ -10,14 +10,14 @@
 #' @export
 fitted.qevt <- function(object, type = c("monotone", "raw"), ...) {
   type <- match.arg(type)
-  
+
   if (is.null(object$train_x)) {
     stop("Training data not available in model object.", call. = FALSE)
   }
-  
+
   # Get predictions for training data
   preds <- predict(object, object$train_x)
-  
+
   # Return requested type
   if (type == "monotone") {
     return(preds$monotone)

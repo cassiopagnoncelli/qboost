@@ -38,8 +38,10 @@
     step_info$current <- step_info$current + 1
 
     if (verbose) {
-      message(sprintf("[%d/%d] Fitting qbm for tau=%g...",
-                      step_info$current, step_info$total, tau))
+      message(sprintf(
+        "[%d/%d] Fitting qbm for tau=%g...",
+        step_info$current, step_info$total, tau
+      ))
       step_start <- Sys.time()
     }
 
@@ -63,8 +65,10 @@
 # Helper: Build stacking design matrix
 .qtail_build_stacking_matrix <- function(x, y, models, taus, verbose, step_info) {
   if (verbose) {
-    message(sprintf("[%d/%d] Building stacking design matrix...",
-                    step_info$current, step_info$total))
+    message(sprintf(
+      "[%d/%d] Building stacking design matrix...",
+      step_info$current, step_info$total
+    ))
     step_start <- Sys.time()
   }
 
@@ -108,8 +112,10 @@
 # Helper: Fit elastic net stacking model
 .qtail_fit_elastic_net <- function(Z, y, verbose, step_info) {
   if (verbose) {
-    message(sprintf("[%d/%d] Fitting elastic net (stacking layer)...",
-                    step_info$current, step_info$total))
+    message(sprintf(
+      "[%d/%d] Fitting elastic net (stacking layer)...",
+      step_info$current, step_info$total
+    ))
     step_start <- Sys.time()
   }
 
@@ -164,8 +170,10 @@
 # Helper: Fit EVT (GPD) tail model
 .qtail_fit_evt <- function(x, y, models, threshold_tau, tail, verbose, step_info) {
   if (verbose) {
-    message(sprintf("[%d/%d] Fitting GPD tail model...",
-                    step_info$current, step_info$total))
+    message(sprintf(
+      "[%d/%d] Fitting GPD tail model...",
+      step_info$current, step_info$total
+    ))
     step_start <- Sys.time()
   }
 
@@ -183,8 +191,10 @@
   evfit <- NULL
 
   if (length(e_exc) < 10) {
-    warning("Very few exceedances for EVT fitting (", length(e_exc),
-            " < 10), using default GPD parameters")
+    warning(
+      "Very few exceedances for EVT fitting (", length(e_exc),
+      " < 10), using default GPD parameters"
+    )
     beta <- ifelse(length(e_exc) > 0, stats::sd(e_exc), 1.0)
   } else {
     # Try to fit GPD
@@ -206,14 +216,17 @@
       },
       error = function(err) {
         if (verbose) {
-          message("  Warning: EVT fitting failed (", err$message,
-                  "), using default GPD parameters")
+          message(
+            "  Warning: EVT fitting failed (", err$message,
+            "), using default GPD parameters"
+          )
         } else {
           warning("EVT fitting failed, using default GPD parameters")
         }
         xi <<- 0.1
         beta <<- ifelse(length(e_exc) > 0 && is.finite(stats::sd(e_exc)),
-                        stats::sd(e_exc), 1.0)
+          stats::sd(e_exc), 1.0
+        )
         evfit <<- NULL
         FALSE
       }

@@ -9,17 +9,17 @@
 #'
 #' @return An object of class qevt_summary (invisibly)
 #' @export
-summary.qevt <- function(object, detailed = TRUE, newdata = NULL, y = NULL, 
+summary.qevt <- function(object, detailed = TRUE, newdata = NULL, y = NULL,
                          top_features = Inf, ...) {
   if (!inherits(object, "qevt")) {
     stop("`object` must be a qevt model.", call. = FALSE)
   }
-  
+
   # Use training data if newdata not provided
   data_use <- newdata
   y_use <- y
   label <- "training"
-  
+
   if (is.null(data_use) && !is.null(object$train_x)) {
     data_use <- object$train_x
     if (is.null(y_use) && !is.null(object$train_y)) {
@@ -28,22 +28,22 @@ summary.qevt <- function(object, detailed = TRUE, newdata = NULL, y = NULL,
   } else if (!is.null(data_use)) {
     label <- "test"
   }
-  
+
   # Get predictions
   if (!is.null(data_use)) {
     preds <- predict(object, data_use)
-    
+
     # Compute metrics if y available
     metrics <- NULL
     if (!is.null(y_use)) {
       y_use <- as.numeric(y_use)
-      
+
       # Coverage at each tau
       coverage <- sapply(seq_along(preds$taus), function(i) {
         mean(y_use <= preds$monotone[, i], na.rm = TRUE)
       })
       names(coverage) <- as.character(preds$taus)
-      
+
       # Pseudo R^2 at key quantiles
       pseudo_r2 <- sapply(seq_along(preds$taus), function(i) {
         tau <- preds$taus[i]
@@ -55,7 +55,7 @@ summary.qevt <- function(object, detailed = TRUE, newdata = NULL, y = NULL,
         1 - loss_model / loss_null
       })
       names(pseudo_r2) <- as.character(preds$taus)
-      
+
       # Kendall correlation at extreme quantiles
       kendall_metrics <- list()
       for (tau_check in c(0.99, 0.999, object$tau_target)) {
@@ -67,17 +67,18 @@ summary.qevt <- function(object, detailed = TRUE, newdata = NULL, y = NULL,
           if (sum(extreme_idx) > 5) {
             kendall <- suppressWarnings(
               stats::cor(y_use[extreme_idx], q_pred[extreme_idx],
-                        method = "kendall", use = "pairwise.complete.obs")
+                method = "kendall", use = "pairwise.complete.obs"
+              )
             )
             kendall_metrics[[as.character(tau_check)]] <- kendall
           }
         }
       }
-      
+
       # MAE at median
       median_idx <- which.min(abs(preds$taus - 0.5))
       mae_median <- mean(abs(y_use - preds$monotone[, median_idx]))
-      
+
       metrics <- list(
         coverage = coverage,
         pseudo_r2 = pseudo_r2,
@@ -90,7 +91,7 @@ summary.qevt <- function(object, detailed = TRUE, newdata = NULL, y = NULL,
     preds <- NULL
     metrics <- NULL
   }
-  
+
   # Feature importance from sub-quantile models
   importance_list <- list()
   for (i in seq_along(object$sub_models)) {
@@ -101,7 +102,7 @@ summary.qevt <- function(object, detailed = TRUE, newdata = NULL, y = NULL,
       importance_list[[tau]] <- imp
     }
   }
-  
+
   # Aggregate importance across models
   importance_agg <- NULL
   if (length(importance_list) > 0) {
@@ -115,7 +116,7 @@ summary.qevt <- function(object, detailed = TRUE, newdata = NULL, y = NULL,
     names(importance_agg) <- c("feature", "gain")
     importance_agg$share_gain <- importance_agg$gain / sum(importance_agg$gain)
   }
-  
+
   # Build summary object
   out <- list(
     taus = object$taus,
@@ -135,15 +136,15 @@ summary.qevt <- function(object, detailed = TRUE, newdata = NULL, y = NULL,
     detailed = detailed,
     top_features = top_features
   )
-  
+
   class(out) <- "qevt_summary"
-  
+
   if (detailed) {
     print(out)
   } else {
     print(out)
   }
-  
+
   invisible(out)
 }
 
@@ -158,7 +159,7 @@ print.qevt_summary <- function(x, ...) {
   if (!inherits(x, "qevt_summary")) {
     stop("`x` must be a qevt_summary object.", call. = FALSE)
   }
-  
+
   if (isTRUE(x$detailed)) {
     cat("Extreme Quantile Model with EVT (qevt)\n")
     cat(" Data:              ", x$n, " rows, ", x$p, " cols\n", sep = "")
@@ -166,7 +167,7 @@ print.qevt_summary <- function(x, ...) {
     cat(" Threshold (tau0):  ", format(x$tau0, digits = 4), "\n", sep = "")
     cat(" Target quantile:   ", format(x$tau_target, digits = 4), "\n", sep = "")
     cat(" Full quantile grid:", paste(format(x$taus_full, digits = 4), collapse = ", "), "\n\n", sep = "")
-    
+
     cat("Model Architecture\n")
     cat(" Sub-quantile models:", x$n_sub_models, " LightGBM quantile regressors\n")
     cat("  - Taus:            ", paste(format(x$tau_grid_sub, digits = 4), collapse = ", "), "\n", sep = "")
@@ -174,7 +175,7 @@ print.qevt_summary <- function(x, ...) {
     cat(" Severity model:     LightGBM regression (fallback)\n")
     cat(" EVT model:          Generalized Pareto Distribution (GPD)\n")
     cat(" Monotonicity:       PAVA isotonic regression\n\n")
-    
+
     cat("Extreme Value Theory (GPD)\n")
     cat(" Shape (xi):         ", format(x$gpd$xi, digits = 4), "\n", sep = "")
     cat(" Scale (beta):       ", format(x$gpd$beta, digits = 4), "\n", sep = "")
@@ -182,20 +183,20 @@ print.qevt_summary <- function(x, ...) {
     cat(" Exceedances:        ", x$gpd$n, "\n", sep = "")
     gpd_status <- if (isTRUE(x$gpd$converged)) "converged" else "not converged"
     cat(" Convergence:        ", gpd_status, "\n", sep = "")
-    
+
     if (!isTRUE(x$gpd$converged)) {
       cat(" Warning:            GPD did not converge; using severity model fallback\n")
     } else if (x$gpd$n < 20) {
       cat(" Warning:            Few exceedances may affect GPD reliability\n")
     }
     cat("\n")
-    
+
     # Metrics section
     if (!is.null(x$metrics)) {
       cat("Performance Metrics (", x$label, " data)\n", sep = "")
       cat(" Observations:       ", x$metrics$n, "\n", sep = "")
       cat(" MAE @ median:       ", format(x$metrics$mae_median, digits = 4), "\n\n", sep = "")
-      
+
       cat(" Coverage:\n")
       cov_df <- data.frame(
         tau = names(x$metrics$coverage),
@@ -209,12 +210,14 @@ print.qevt_summary <- function(x, ...) {
       if (nrow(cov_display) > 0) {
         for (i in seq_len(nrow(cov_display))) {
           cat("  ", format(cov_display$tau[i], width = 6), ": ",
-              format(cov_display$coverage[i], digits = 4, width = 7),
-              " (dev: ", format(cov_display$deviation[i], digits = 4), ")\n", sep = "")
+            format(cov_display$coverage[i], digits = 4, width = 7),
+            " (dev: ", format(cov_display$deviation[i], digits = 4), ")\n",
+            sep = ""
+          )
         }
       }
       cat("\n")
-      
+
       cat(" Pseudo R^2:\n")
       r2_df <- data.frame(
         tau = names(x$metrics$pseudo_r2),
@@ -225,28 +228,32 @@ print.qevt_summary <- function(x, ...) {
       if (nrow(r2_display) > 0) {
         for (i in seq_len(nrow(r2_display))) {
           cat("  ", format(r2_display$tau[i], width = 6), ": ",
-              format(r2_display$r2[i], digits = 4), "\n", sep = "")
+            format(r2_display$r2[i], digits = 4), "\n",
+            sep = ""
+          )
         }
       }
       cat("\n")
-      
+
       if (length(x$metrics$kendall) > 0) {
         cat(" Kendall correlation (at extreme predictions):\n")
         for (tau_name in names(x$metrics$kendall)) {
           cat("  ", format(tau_name, width = 6), ": ",
-              format(x$metrics$kendall[[tau_name]], digits = 4), "\n", sep = "")
+            format(x$metrics$kendall[[tau_name]], digits = 4), "\n",
+            sep = ""
+          )
         }
         cat("\n")
       }
     }
-    
+
     # Feature importance
     if (!is.null(x$importance) && nrow(x$importance) > 0) {
       cat("Feature Importance (averaged across sub-quantile models)\n")
       n_show <- if (is.finite(x$top_features)) min(x$top_features, nrow(x$importance)) else nrow(x$importance)
       top <- utils::head(x$importance, n_show)
       top$share_pct <- top$share_gain * 100
-      
+
       # Create formatted tibble for display
       imp_tbl <- tibble::tibble(
         rank = seq_len(nrow(top)),
@@ -254,11 +261,10 @@ print.qevt_summary <- function(x, ...) {
         gain = top$gain,
         share_pct = top$share_pct
       )
-      
+
       print(imp_tbl, n = Inf)
       cat("\n")
     }
-    
   } else {
     # Compact summary
     cat("Extreme Quantile Model (qevt)\n")
@@ -266,35 +272,39 @@ print.qevt_summary <- function(x, ...) {
     cat(" Target:            ", format(x$tau_target, digits = 4), "\n", sep = "")
     cat(" Data:              ", x$n, " rows, ", x$p, " cols\n", sep = "")
     cat(" Models:            ", x$n_sub_models, " sub-quantile + exceedance + EVT\n", sep = "")
-    
+
     gpd_status <- if (isTRUE(x$gpd$converged)) "OK" else "fallback"
     cat(" GPD:               xi=", format(x$gpd$xi, digits = 3),
-        ", beta=", format(x$gpd$beta, digits = 3),
-        " (", gpd_status, ", n=", x$gpd$n, ")\n", sep = "")
-    
+      ", beta=", format(x$gpd$beta, digits = 3),
+      " (", gpd_status, ", n=", x$gpd$n, ")\n",
+      sep = ""
+    )
+
     if (!is.null(x$metrics)) {
       cov_target <- x$metrics$coverage[as.character(x$tau_target)]
       dev_target <- abs(cov_target - x$tau_target)
       cat(" Coverage@target:   ", format(cov_target, digits = 4),
-          " (dev: ", format(dev_target, digits = 4), ")\n", sep = "")
-      
+        " (dev: ", format(dev_target, digits = 4), ")\n",
+        sep = ""
+      )
+
       r2_median_idx <- which.min(abs(as.numeric(names(x$metrics$pseudo_r2)) - 0.5))
       r2_median <- x$metrics$pseudo_r2[r2_median_idx]
       cat(" Pseudo R^2@median: ", format(r2_median, digits = 4), "\n", sep = "")
-      
+
       if (length(x$metrics$kendall) > 0) {
         kendall_vals <- unlist(x$metrics$kendall)
         cat(" Kendall (extremes):", paste(format(kendall_vals, digits = 3), collapse = ", "), "\n")
       }
     }
-    
+
     if (!is.null(x$importance) && nrow(x$importance) > 0) {
       top3 <- utils::head(x$importance, 3)
       cat(" Top features:      ", paste(top3$feature, collapse = ", "), "\n", sep = "")
     }
-    
+
     cat("\n(detailed = TRUE for full report)\n")
   }
-  
+
   invisible(x)
 }
