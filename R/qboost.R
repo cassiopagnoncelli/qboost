@@ -4,7 +4,6 @@
 #' implementation lives in `qbm()`. They simply forward to the corresponding
 #' `qbm` functions.
 #'
-#' @inheritParams qbm
 #' @rdname qbm
 #' @export
 qboost <- function(
