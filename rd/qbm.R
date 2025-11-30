@@ -2,7 +2,6 @@ devtools::load_all()
 
 set.seed(123)
 
-# Generate data with heavy tails
 n <- 10000
 
 df <- tibble::tibble(
@@ -12,8 +11,7 @@ df <- tibble::tibble(
   y = 2 * x1 - 0.5 * x2^2 + 0.3 * x3 + 2 * rt(n, df = 3)
 )
 
-# Fit a non-linear quantile model
-fit <- qrb(
+fit <- qbm(
   y ~ .,
   data = df,
   tau = 0.94,

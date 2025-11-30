@@ -107,7 +107,7 @@ qevt <- function(
   model
 }
 
-# Parse qevt inputs (formula or x/y) - similar to qrb/qtail
+# Parse qevt inputs (formula or x/y) - similar to qbm/qtail
 .parse_qevt_inputs <- function(dots) {
   if (length(dots) == 0) {
     stop("Provide either a formula or an `x`/`y` pair.", call. = FALSE)

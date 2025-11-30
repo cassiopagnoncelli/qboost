@@ -273,7 +273,7 @@ extract_cv_table <- function(cv_result) {
   )
 }
 
-#' Compute evaluation metrics for qrb models
+#' Compute evaluation metrics for qbm models
 #'
 #' @param y Observed numeric vector.
 #' @param yhat Predicted numeric vector.
@@ -283,7 +283,7 @@ extract_cv_table <- function(cv_result) {
 #'
 #' @return List with metrics, calibration, tails, and complexity.
 #' @keywords internal
-compute_qrb_metrics <- function(y, yhat, tau, cv_result = NULL, model = NULL, best_iter = NULL) {
+compute_qbm_metrics <- function(y, yhat, tau, cv_result = NULL, model = NULL, best_iter = NULL) {
   pinball_mean <- pinball_loss_mean(y, yhat, tau)
   pinball_comp <- pinball_loss_components(y, yhat, tau)
   mae_val <- mae(y, yhat)

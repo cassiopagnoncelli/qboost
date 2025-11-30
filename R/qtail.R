@@ -30,7 +30,7 @@
   list(x = x, y = y)
 }
 
-# Helper: Fit qrb models for each tau
+# Helper: Fit qbm models for each tau
 .qtail_fit_models <- function(x, y, taus, params, verbose, step_info) {
   models <- list()
   for (j in seq_along(taus)) {
@@ -38,12 +38,12 @@
     step_info$current <- step_info$current + 1
 
     if (verbose) {
-      message(sprintf("[%d/%d] Fitting qrb for tau=%g...",
+      message(sprintf("[%d/%d] Fitting qbm for tau=%g...",
                       step_info$current, step_info$total, tau))
       step_start <- Sys.time()
     }
 
-    models[[as.character(tau)]] <- qrb(
+    models[[as.character(tau)]] <- qbm(
       x, y,
       tau = tau,
       nrounds = params$nrounds %||% 500,
@@ -246,7 +246,7 @@
 #' @param taus Quantile levels to fit. If NULL, defaults based on tail type.
 #' @param tail Tail type: "upper" or "lower"
 #' @param threshold_tau Threshold quantile for EVT. If NULL, defaults based on tail type.
-#' @param params Parameters passed to qrb (nrounds, nfolds, etc.)
+#' @param params Parameters passed to qbm (nrounds, nfolds, etc.)
 #' @param verbose Logical; if TRUE, print progress messages
 #'
 #' @return An object of class "qtail"
@@ -320,7 +320,7 @@ qtail <- function(...,
   y <- cleaned$y
   n <- length(y)
 
-  # Step 2: Fit qrb models
+  # Step 2: Fit qbm models
   models <- .qtail_fit_models(x, y, taus, params, verbose, step_info)
   step_info$current <- step_info$current + length(taus)
 
@@ -369,7 +369,7 @@ qtail <- function(...,
   object
 }
 
-# Parse qtail inputs (formula or x/y) - similar to qrb
+# Parse qtail inputs (formula or x/y) - similar to qbm
 .parse_qtail_inputs <- function(dots) {
   if (length(dots) == 0) {
     stop("Provide either a formula or an `x`/`y` pair.", call. = FALSE)

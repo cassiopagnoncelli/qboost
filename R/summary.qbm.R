@@ -1,18 +1,18 @@
-#' Summarise a `qrb` model
+#' Summarise a `qbm` model
 #'
-#' @param object A fitted `qrb` object.
+#' @param object A fitted `qbm` object.
 #' @param detailed Logical; if TRUE, print extended diagnostics.
 #' @param newdata Optional new data for out-of-sample summary.
 #' @param y_new Optional observed outcomes aligned with `newdata`.
 #' @param top_features Integer; number of features to show in importance tables.
 #' @param ... Unused, included for compatibility.
 #'
-#' @return An object of class `qrb_summary`.
+#' @return An object of class `qbm_summary`.
 #' @export
-#' @method summary qrb
-summary.qrb <- function(object, detailed = TRUE, newdata = NULL, y_new = NULL, top_features = 15, ...) {
-  if (!inherits(object, "qrb")) {
-    stop("`object` must be a qrb model.", call. = FALSE)
+#' @method summary qbm
+summary.qbm <- function(object, detailed = TRUE, newdata = NULL, y_new = NULL, top_features = 15, ...) {
+  if (!inherits(object, "qbm")) {
+    stop("`object` must be a qbm model.", call. = FALSE)
   }
 
   stability <- compute_stability_score(
@@ -32,7 +32,7 @@ summary.qrb <- function(object, detailed = TRUE, newdata = NULL, y_new = NULL, t
       if (length(y_new) != nrow(nd)) {
         stop("`y_new` length must match number of rows in `newdata`.", call. = FALSE)
       }
-      metrics_new <- compute_qrb_metrics(
+      metrics_new <- compute_qbm_metrics(
         y = y_new,
         yhat = preds_new,
         tau = object$tau,
@@ -67,7 +67,7 @@ summary.qrb <- function(object, detailed = TRUE, newdata = NULL, y_new = NULL, t
     tails = object$tails,
     complexity = object$complexity,
     residuals = object$residuals,
-    importance = importance.qrb(object),
+    importance = importance.qbm(object),
     data_info = object$data_info,
     timings = object$timings,
     cv_settings = object$cv_settings,
@@ -78,20 +78,20 @@ summary.qrb <- function(object, detailed = TRUE, newdata = NULL, y_new = NULL, t
     top_features = top_features_final
   )
 
-  class(out) <- "qrb_summary"
+  class(out) <- "qbm_summary"
   out
 }
 
-#' Print method for `qrb_summary`
+#' Print method for `qbm_summary`
 #'
-#' @param x A `qrb_summary` object.
+#' @param x A `qbm_summary` object.
 #' @param ... Additional arguments (unused).
 #'
 #' @return The input object, invisibly.
 #' @export
-print.qrb_summary <- function(x, ...) {
-  if (!inherits(x, "qrb_summary")) {
-    stop("`x` must be a qrb_summary object.", call. = FALSE)
+print.qbm_summary <- function(x, ...) {
+  if (!inherits(x, "qbm_summary")) {
+    stop("`x` must be a qbm_summary object.", call. = FALSE)
   }
 
   if (isTRUE(x$detailed)) {
@@ -232,14 +232,14 @@ print.qrb_summary <- function(x, ...) {
   invisible(x)
 }
 
-#' Print method for `qrb`
+#' Print method for `qbm`
 #'
-#' @param x A `qrb` object.
+#' @param x A `qbm` object.
 #' @param ... Additional arguments (unused).
 #'
 #' @return The input object, invisibly.
 #' @export
-print.qrb <- function(x, ...) {
+print.qbm <- function(x, ...) {
   summary(x)
   invisible(x)
 }

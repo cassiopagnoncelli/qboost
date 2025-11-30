@@ -15,7 +15,7 @@
 #' @param early_stopping_rounds Early stopping patience in CV.
 #' @param seed Random seed for reproducibility.
 #'
-#' @return An object of class `qrb`.
+#' @return An object of class `qbm`.
 #' @export
 #'
 #' @examples
@@ -26,10 +26,10 @@
 #'   x2 = rnorm(200)
 #' )
 #' df$y <- df$x1 * 0.5 + rnorm(200)
-#' fit <- qrb(y ~ x1 + x2, data = df, tau = 0.3, nrounds = 50, nfolds = 3)
+#' fit <- qbm(y ~ x1 + x2, data = df, tau = 0.3, nrounds = 50, nfolds = 3)
 #' predict(fit, head(df[, c("x1", "x2")]))
 #' }
-qrb <- function(
+qbm <- function(
     ...,
     tau = 0.5,
     nrounds = 500,
@@ -40,7 +40,7 @@ qrb <- function(
   start_time <- Sys.time()
 
   dots <- list(...)
-  parsed <- .parse_qrb_inputs(dots)
+  parsed <- .parse_qbm_inputs(dots)
 
   x <- parsed$x
   y <- as.numeric(parsed$y)
@@ -105,7 +105,7 @@ qrb <- function(
 
   fitted <- .lgb_predict(final_model, x)
 
-  train_metrics <- compute_qrb_metrics(
+  train_metrics <- compute_qbm_metrics(
     y = y,
     yhat = fitted,
     tau = tau,
@@ -150,11 +150,11 @@ qrb <- function(
     )
   )
 
-  class(out) <- "qrb"
+  class(out) <- "qbm"
   out
 }
 
-.parse_qrb_inputs <- function(dots) {
+.parse_qbm_inputs <- function(dots) {
   if (length(dots) == 0) {
     stop("Provide either a formula or an `x`/`y` pair.", call. = FALSE)
   }
