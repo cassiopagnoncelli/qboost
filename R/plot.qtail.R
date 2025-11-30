@@ -211,7 +211,7 @@ plot.qtail <- function(x,
   coverage_df <- data.frame(
     tau = x$taus,
     coverage = sapply(x$taus, function(tau) {
-      preds <- predict.qtail(x, x$x, tau = tau, type = "final")
+      preds <- predict.qtail(x, x$x, tau_override = tau, type = "final")
       mean(x$y <= preds, na.rm = TRUE)
     })
   )

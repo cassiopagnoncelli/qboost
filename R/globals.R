@@ -1,9 +1,18 @@
 utils::globalVariables(c(
+  "coefficient",
+  "coverage",
   "empirical",
   "feature",
   "gain",
   "nominal",
   "observed",
+  "pit",
   "predicted",
-  "residual"
+  "quantile",
+  "residual",
+  "residuals",
+  "tau",
+  "theoretical",
+  "type",
+  "variable"
 ))
