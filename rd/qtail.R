@@ -37,4 +37,4 @@ tau <- 0.993
 q <- quantile(predict(fit, newdata = df[train_idx, ], tau = tau), tau)
 
 preds <- predict(fit, newdata = df[train_idx, ], tau = tau) # EVT extrapolation
-sum(preds_extreme > preds_993q)
+sum(preds > q)
