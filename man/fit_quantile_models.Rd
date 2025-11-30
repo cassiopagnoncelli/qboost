@@ -15,7 +15,7 @@ fit_quantile_models(x, y, taus, params = list(), ...)
 
 \item{params}{List of LightGBM parameters (per model)}
 
-\item{...}{Extra args to qboost}
+\item{...}{Extra args to qbm}
 }
 \value{
 Named list of models keyed by tau

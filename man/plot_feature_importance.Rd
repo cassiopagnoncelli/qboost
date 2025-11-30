@@ -7,7 +7,7 @@
 plot_feature_importance(df, top_n = 25)
 }
 \arguments{
-\item{df}{Data frame returned by \code{importance.qboost()}.}
+\item{df}{Data frame returned by \code{importance.qbm()}.}
 
 \item{top_n}{Maximum number of features to display.}
 }

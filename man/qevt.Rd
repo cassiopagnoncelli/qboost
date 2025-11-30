@@ -4,14 +4,7 @@
 \alias{qevt}
 \title{Fit extreme quantile model with EVT and PAVA monotonicity}
 \usage{
-qevt(
-  ...,
-  tau_target = 0.9999,
-  tau0 = 0.997,
-  tau1 = 0.9985,
-  tau2 = 0.999,
-  tau3 = 0.9993
-)
+qevt(..., tau_target = 0.9999, taus = c(0.997, 0.9985, 0.999, 0.9993))
 }
 \arguments{
 \item{...}{Either a formula and optional \code{data} argument or an \code{x}/\code{y} pair
@@ -19,13 +12,8 @@ followed by additional arguments.}
 
 \item{tau_target}{Final extreme tau (default 0.9999)}
 
-\item{tau0}{Threshold quantile for EVT (default 0.997)}
-
-\item{tau1}{Intermediate EVT quantile (default 0.9985)}
-
-\item{tau2}{Intermediate EVT quantile (default 0.999)}
-
-\item{tau3}{Intermediate EVT quantile (default 0.9993)}
+\item{taus}{Vector of EVT quantiles including threshold and intermediate values
+(default c(0.997, 0.9985, 0.999, 0.9993)). The first value is the EVT threshold.}
 }
 \value{
 Object of class 'qevt'

@@ -1,4 +1,4 @@
 library(testthat)
-library(qbm)
+library(qboost)
 
-test_check("qbm")
+test_check("qboost")

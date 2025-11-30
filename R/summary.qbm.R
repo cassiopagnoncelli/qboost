@@ -53,7 +53,7 @@ summary.qbm <- function(object, detailed = TRUE, newdata = NULL, y_new = NULL, t
 
   # default top_features: Inf for detailed, 15 for compact
   if (is.null(top_features) || !is.numeric(top_features) ||
-    length(top_features) != 1 || top_features < 1) {
+        length(top_features) != 1 || top_features < 1) {
     top_features_final <- if (isTRUE(detailed)) Inf else 15
   } else {
     top_features_final <- top_features

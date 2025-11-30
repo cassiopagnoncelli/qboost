@@ -4,19 +4,30 @@
 \alias{summary.qevt}
 \title{Summary for qevt model}
 \usage{
-\method{summary}{qevt}(object, newdata = NULL, y = NULL, ...)
+\method{summary}{qevt}(
+  object,
+  detailed = TRUE,
+  newdata = NULL,
+  y = NULL,
+  top_features = Inf,
+  ...
+)
 }
 \arguments{
-\item{object}{qevt}
+\item{object}{A qevt object}
 
-\item{newdata}{Optional feature matrix for diagnostics (defaults to training data if available)}
+\item{detailed}{Logical; if TRUE, print extended diagnostics (default TRUE)}
 
-\item{y}{Optional outcomes aligned with \code{newdata} for diagnostics}
+\item{newdata}{Optional feature matrix for out-of-sample evaluation}
+
+\item{y}{Optional outcomes aligned with \code{newdata}}
+
+\item{top_features}{Integer; number of top features to show in importance table (default Inf shows all)}
 
 \item{...}{unused}
 }
 \value{
-invisible list with key stats
+An object of class qevt_summary (invisibly)
 }
 \description{
 Summary for qevt model

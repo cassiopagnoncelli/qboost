@@ -23,7 +23,7 @@ followed by additional arguments.}
 
 \item{threshold_tau}{Threshold quantile for EVT. If NULL, defaults based on tail type.}
 
-\item{params}{Parameters passed to qboost (nrounds, nfolds, etc.)}
+\item{params}{Parameters passed to qbm (nrounds, nfolds, etc.)}
 
 \item{verbose}{Logical; if TRUE, print progress messages}
 }
