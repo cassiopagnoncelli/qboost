@@ -5,9 +5,9 @@
 \alias{importance.qboost}
 \title{Feature importance for a \code{qbm} model}
 \usage{
-importance.qbm(object, ...)
+\method{importance}{qbm}(object, ...)
 
-importance.qboost(object, ...)
+\method{importance}{qboost}(object, ...)
 }
 \arguments{
 \item{object}{A fitted \code{qbm} model.}

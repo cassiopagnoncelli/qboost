@@ -285,3 +285,76 @@ test_that("mqbm backward compatibility with symbol parameter", {
   expect_length(preds, 50)
   expect_false(any(is.na(preds)))
 })
+
+test_that("importance.mqbm returns aggregated importance", {
+  set.seed(123)
+  df <- data.frame(
+    x1 = rnorm(200),
+    x2 = rnorm(200),
+    x3 = rnorm(200),
+    symbol = sample(c("A", "B", "C"), 200, replace = TRUE)
+  )
+  df$y <- df$x1 * 0.8 + df$x2 * 0.3 + rnorm(200)
+  
+  fit <- mqbm(y ~ x1 + x2 + x3, data = df, tau = 0.5, nrounds = 30, nfolds = 2)
+  
+  imp <- importance(fit)
+  
+  # Should be a tibble
+  expect_s3_class(imp, "tbl_df")
+  
+  # Should have the right columns
+  expect_true(all(c("feature", "gain", "sd_gain", "n_models") %in% names(imp)))
+  
+  # Should have features
+  expect_gt(nrow(imp), 0)
+  expect_true(all(c("x1", "x2", "x3") %in% imp$feature))
+  
+  # Should be sorted by gain descending
+  expect_equal(imp$gain, sort(imp$gain, decreasing = TRUE))
+  
+  # All values should be non-negative
+  expect_true(all(imp$gain >= 0))
+  expect_true(all(imp$sd_gain >= 0, na.rm = TRUE))
+  
+  # n_models should be between 1 and number of symbols
+  expect_true(all(imp$n_models >= 1 & imp$n_models <= length(fit$symbols)))
+})
+
+test_that("importance.mqbm handles features present in subset of models", {
+  set.seed(123)
+  df <- data.frame(
+    x1 = rnorm(200),
+    x2 = rnorm(200),
+    symbol = sample(c("A", "B"), 200, replace = TRUE)
+  )
+  df$y <- df$x1 * 0.5 + rnorm(200)
+  
+  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 30, nfolds = 2)
+  
+  imp <- importance(fit)
+  
+  # Should report n_models for each feature
+  expect_true(all(imp$n_models > 0))
+  
+  # gain and sd_gain should be computed correctly
+  expect_false(any(is.na(imp$gain)))
+})
+
+test_that("importance.mqbm works with custom multi parameter", {
+  set.seed(123)
+  df <- data.frame(
+    x1 = rnorm(200),
+    x2 = rnorm(200),
+    group = sample(c("G1", "G2"), 200, replace = TRUE)
+  )
+  df$y <- df$x1 * 0.5 + rnorm(200)
+  
+  fit <- mqbm(y ~ x1 + x2, data = df, multi = "group", tau = 0.5, nrounds = 30, nfolds = 2)
+  
+  imp <- importance(fit)
+  
+  expect_s3_class(imp, "tbl_df")
+  expect_gt(nrow(imp), 0)
+  expect_true(all(c("feature", "gain", "sd_gain", "n_models") %in% names(imp)))
+})
