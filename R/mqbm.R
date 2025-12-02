@@ -1,38 +1,90 @@
-#' Fit symbol-based LightGBM quantile regression models
+#' Fit symbol-based (multi-group) quantile regression models
 #'
-#' Trains separate `qbm` models for each symbol/label in the data. This allows
-#' for heterogeneous quantile models where different subgroups (symbols) have
-#' their own prediction models.
+#' Trains separate \code{\link{qbm}} quantile regression models for each symbol
+#' (group/label) in the data. This symbol-based multiplexer enables heterogeneous
+#' quantile modeling where different subgroups can have distinct relationships
+#' between predictors and outcomes. Particularly useful for multi-asset portfolios,
+#' multi-site studies, or any scenario where group-specific quantile behavior differs.
 #'
-#' @param ... Either a formula and optional `data` argument (where `data` must
-#'   contain a `symbol` column), or an `x`/`y`/`symbol` triplet, followed by
-#'   additional arguments forwarded to `qbm()`.
-#' @param tau Target quantile in (0, 1].
-#' @param nrounds Maximum number of boosting iterations.
-#' @param nfolds Number of cross-validation folds.
-#' @param params Optional named list of extra LightGBM parameters.
-#' @param early_stopping_rounds Early stopping patience in CV.
-#' @param seed Random seed for reproducibility.
+#' @param ... Either a formula with \code{data} argument (where \code{data} must
+#'   contain a \code{symbol} column identifying groups), or an \code{x}/\code{y}/\code{symbol}
+#'   triplet for matrix input. Additional arguments are forwarded to \code{\link{qbm}}.
+#' @param tau Target quantile level in (0, 1] applied to all symbol-specific models.
+#'   Default is 0.5 (median).
+#' @param nrounds Maximum number of boosting iterations per symbol model. Default is 500.
+#' @param nfolds Number of cross-validation folds for each symbol model. Default is 5.
+#' @param params Optional named list of LightGBM parameters shared across all
+#'   symbol-specific models. See \code{\link{qbm}} for available parameters.
+#' @param early_stopping_rounds Early stopping patience for each symbol model. Default is 50.
+#' @param seed Random seed for reproducibility across all symbol models. Default is 1.
 #'
-#' @return An object of class `mqbm` containing one fitted `qbm` model per symbol.
-#' @export
+#' @return An object of class \code{mqbm} containing:
+#'   \item{models}{Named list of fitted \code{\link{qbm}} objects, one per symbol}
+#'   \item{symbols}{Character vector of unique symbol identifiers}
+#'   \item{symbol_info}{List with sample size and indices for each symbol}
+#'   \item{tau}{The target quantile level used}
+#'   \item{preprocess}{Preprocessing information (for formula interface)}
+#'   \item{timings}{Training time information}
+#'   \item{data_info}{Dataset dimensions (n, p, n_symbols)}
+#'   \item{training}{Training data (y and symbol vectors)}
+#'
+#' @details
+#' The mqbm (multi-symbol qbm) approach:
+#' \enumerate{
+#'   \item Partitions data by symbol/group
+#'   \item Trains independent \code{\link{qbm}} models for each symbol
+#'   \item Maintains separate hyperparameters and feature importance per symbol
+#'   \item Routes predictions to appropriate symbol-specific model
+#' }
+#'
+#' This is beneficial when:
+#' \itemize{
+#'   \item Different groups have heterogeneous quantile behavior
+#'   \item Sample sizes per group are sufficient for separate modeling
+#'   \item Group-specific feature importance is of interest
+#'   \item Interactions between predictors vary by group
+#' }
+#'
+#' @seealso \code{\link{qbm}}, \code{\link{predict.mqbm}}, \code{\link{fitted.mqbm}},
+#'   \code{\link{residuals.mqbm}}, \code{\link{coef.mqbm}}
 #'
 #' @examples
 #' \dontrun{
+#' # Multi-symbol financial data
 #' set.seed(1)
 #' df <- data.frame(
-#'   x1 = rnorm(200),
-#'   x2 = rnorm(200),
-#'   symbol = sample(c("A", "B", "C"), 200, replace = TRUE)
+#'   x1 = rnorm(300),
+#'   x2 = rnorm(300),
+#'   symbol = sample(c("AAPL", "GOOGL", "MSFT"), 300, replace = TRUE)
 #' )
-#' df$y <- df$x1 * 0.5 + rnorm(200)
-#' 
-#' # Formula interface
-#' fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.3, nrounds = 50, nfolds = 3)
-#' 
-#' # x/y/symbol interface
-#' fit2 <- mqbm(x = df[, c("x1", "x2")], y = df$y, symbol = df$symbol,
-#'              tau = 0.3, nrounds = 50, nfolds = 3)
+#' # Different symbols have different relationships
+#' df$y <- ifelse(df$symbol == "AAPL",
+#'                df$x1 * 2 + rnorm(300),
+#'                df$x1 * 0.5 + df$x2 * 1.5 + rnorm(300))
+#'
+#' # Formula interface - data must contain 'symbol' column
+#' fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 100)
+#' print(fit)
+#'
+#' # Predictions automatically route to correct symbol model
+#' newdata <- data.frame(
+#'   x1 = c(1, 1, 1),
+#'   x2 = c(0, 0, 0),
+#'   symbol = c("AAPL", "GOOGL", "MSFT")
+#' )
+#' predict(fit, newdata)
+#'
+#' # Matrix interface
+#' X <- as.matrix(df[, c("x1", "x2")])
+#' fit2 <- mqbm(x = X, y = df$y, symbol = df$symbol, tau = 0.75)
+#'
+#' # Access symbol-specific models
+#' fit$models$AAPL  # qbm model for AAPL
+#' coef(fit)  # Feature importance per symbol
+#'
+#' # Different quantiles per symbol
+#' fit_lower <- mqbm(y ~ x1 + x2, data = df, tau = 0.1)
+#' fit_upper <- mqbm(y ~ x1 + x2, data = df, tau = 0.9)
 #' }
 mqbm <- function(
     ...,

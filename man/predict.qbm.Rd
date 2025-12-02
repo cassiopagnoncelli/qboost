@@ -2,22 +2,64 @@
 % Please edit documentation in R/predict.qbm.R
 \name{predict.qbm}
 \alias{predict.qbm}
-\title{Predict from a \code{qbm} model}
+\title{Predict quantiles from a qbm model}
 \usage{
 \method{predict}{qbm}(object, newdata, ...)
 }
 \arguments{
-\item{object}{A fitted \code{qbm} object.}
+\item{object}{A fitted qbm model object returned by \code{\link{qbm}}.}
 
-\item{newdata}{New data.frame or matrix of predictors. For models fit with a
-formula, a data.frame with the same predictor columns used at training
-time is expected.}
+\item{newdata}{A data.frame or matrix of predictor variables. For models fit
+with a formula interface, \code{newdata} must be a data.frame containing
+all predictor variables used in training (factor levels, transformations,
+and interactions are handled automatically). For models fit with the matrix
+interface, \code{newdata} should have the same number and order of columns
+as the training data.}
 
-\item{...}{Additional arguments passed to \code{stats::predict()}.}
+\item{...}{Additional arguments (currently unused).}
 }
 \value{
-Numeric vector of predicted quantiles.
+A numeric vector of length \code{nrow(newdata)} containing predicted
+quantile values at the tau level specified during model training.
 }
 \description{
-Predict from a \code{qbm} model
+Generates quantile predictions at the specified tau level for new observations.
+Automatically handles formula preprocessing and ensures feature compatibility
+with the training data.
+}
+\details{
+The prediction process preserves the preprocessing applied during training:
+\itemize{
+\item For formula models: factor encoding, interactions, and transformations
+are automatically applied to \code{newdata}
+\item For matrix models: features are used as-is but coerced to numeric matrix
+\item Missing values are preserved in predictions (result in \code{NA})
+}
+}
+\examples{
+\dontrun{
+# Train model
+df <- data.frame(x1 = rnorm(100), x2 = rnorm(100))
+df$y <- df$x1 * 0.5 + rnorm(100)
+fit <- qbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 50)
+
+# Predict on new data
+newdata <- data.frame(x1 = c(0, 1, -1), x2 = c(0, 0, 1))
+predictions <- predict(fit, newdata)
+print(predictions)
+
+# Compare multiple quantiles
+fit_lower <- qbm(y ~ x1 + x2, data = df, tau = 0.1, nrounds = 50)
+fit_upper <- qbm(y ~ x1 + x2, data = df, tau = 0.9, nrounds = 50)
+
+data.frame(
+  lower = predict(fit_lower, newdata),
+  median = predict(fit, newdata),
+  upper = predict(fit_upper, newdata)
+)
+}
+
+}
+\seealso{
+\code{\link{qbm}}, \code{\link{fitted.qbm}}, \code{\link{residuals.qbm}}
 }
