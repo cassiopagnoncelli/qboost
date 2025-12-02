@@ -418,7 +418,7 @@ test_that("summary.mqbm computes aggregate metrics correctly", {
   # Each symbol should have all metrics
   for (sym in c("A", "B")) {
     expect_true(all(c("n", "pinball", "mae", "pseudo_r2", "coverage", "qce") %in% 
-                    names(summ$metrics$per_symbol[[sym]])))
+                      names(summ$metrics$per_symbol[[sym]])))
   }
 })
 

@@ -4,7 +4,7 @@ devtools::load_all()
 
 # Create sample data with multiple symbols
 set.seed(123)
-n <- 300
+n <- 3000
 df <- data.frame(
   x1 = rnorm(n),
   x2 = rnorm(n),
@@ -12,7 +12,7 @@ df <- data.frame(
 )
 
 # Each symbol has different relationship with y
-df$y <- ifelse(df$symbol == "AAPL", 
+df$y <- ifelse(df$symbol == "AAPL",
                df$x1 * 2.0 + df$x2 * 0.5 + rnorm(n, sd = 0.5),
                ifelse(df$symbol == "GOOGL",
                       df$x1 * 0.5 + df$x2 * 2.0 + rnorm(n, sd = 0.5),
@@ -65,7 +65,7 @@ cat("Range:", range(fitted_vals), "\n")
 cat("\nIndividual models per symbol:\n")
 for (sym in fit$symbols) {
   model <- fit$models[[sym]]
-  cat(sprintf("  %s: %d trees, %d observations\n", 
+  cat(sprintf("  %s: %d trees, %d observations\n",
               sym, model$best_iter, fit$symbol_info[[sym]]$n))
 }
 
@@ -77,7 +77,7 @@ for (sym in fit$symbols) {
   sym_idx <- which(test_df$symbol == sym)
   if (length(sym_idx) > 0) {
     sym_preds <- preds1[sym_idx]
-    cat(sprintf("  %s: mean=%.3f, sd=%.3f, n=%d\n", 
+    cat(sprintf("  %s: mean=%.3f, sd=%.3f, n=%d\n",
                 sym, mean(sym_preds), sd(sym_preds), length(sym_idx)))
   }
 }

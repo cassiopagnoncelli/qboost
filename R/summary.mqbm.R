@@ -151,6 +151,8 @@
 #'   Default is 10.
 #' @param ... Additional arguments (currently unused).
 #'
+#' @importFrom stats fitted
+#'
 #' @return An object of class \code{mqbm_summary} containing:
 #'   \item{tau}{Target quantile level}
 #'   \item{multi}{Multiplexer column name used}
