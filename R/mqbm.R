@@ -86,6 +86,7 @@
 #' fit_lower <- mqbm(y ~ x1 + x2, data = df, tau = 0.1)
 #' fit_upper <- mqbm(y ~ x1 + x2, data = df, tau = 0.9)
 #' }
+#' @export
 mqbm <- function(
     ...,
     tau = 0.5,

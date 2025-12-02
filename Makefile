@@ -35,7 +35,7 @@ uninstall:
 	@${Rscript} -e "tryCatch(remove.packages(\"${PACKAGE_NAME}\"), error = function(e) message('Package not installed'))"
 
 docs:
-	@${Rscript} -e 'devtools::document()'
+	@${Rscript} -e 'roxygen2::roxygenise()'
 
 tests: test
 

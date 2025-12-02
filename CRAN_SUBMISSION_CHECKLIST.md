@@ -82,9 +82,10 @@ All package dependencies are available on CRAN:
 
 ### Required Before Submission
 
-1. **Clean build and check**
+1. **Generate documentation and run clean build and check**
    ```r
-   devtools::check()
+   roxygen2::roxygenise()  # Generate documentation
+   devtools::check()        # Check package
    ```
 
 2. **Test on multiple platforms** (recommended)

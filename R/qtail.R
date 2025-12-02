@@ -369,6 +369,7 @@
 #' y <- df$y
 #' fit_matrix <- qtail(X, y, tail = "upper", params = list(nrounds = 100))
 #' }
+#' @export
 qtail <- function(...,
                   taus = NULL,
                   tail = c("upper", "lower"),

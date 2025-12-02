@@ -103,6 +103,7 @@
 #' fit_9999 <- qevt(y ~ x1 + x2, data = df, tau_target = 0.9999)
 #' fit_99999 <- qevt(y ~ x1 + x2, data = df, tau_target = 0.99999)
 #' }
+#' @export
 qevt <- function(
     ...,
     tau_target = 0.98,

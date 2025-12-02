@@ -4,7 +4,7 @@
 \alias{qevt}
 \title{Fit extreme quantile model with EVT and conditional modeling}
 \usage{
-qevt(..., tau_target = 0.9999, taus = c(0.997, 0.9985, 0.999, 0.9993))
+qevt(..., tau_target = 0.98, taus = c(0.95, 0.98, 0.99, 0.993, 0.999))
 }
 \arguments{
 \item{...}{Either a formula with optional \code{data} argument, or an
@@ -12,12 +12,12 @@ qevt(..., tau_target = 0.9999, taus = c(0.997, 0.9985, 0.999, 0.9993))
 forwarded to internal fitting functions.}
 
 \item{tau_target}{Numeric scalar defining the target extreme quantile level.
-Default is 0.9999 (99.99th percentile). This is the quantile level that
+Default is 0.98 (98.00th percentile). This is the quantile level that
 predictions will target.}
 
 \item{taus}{Numeric vector of intermediate EVT quantile levels between the
-threshold and target. Default is \code{c(0.997, 0.9985, 0.999, 0.9993)}.
-The first value (0.997) serves as the EVT threshold (tau0). Additional
+threshold and target. Default is \code{c(0.95, 0.98, 0.99, 0.993, 0.999)}.
+The first value (0.95) serves as the EVT threshold (tau0). Additional
 values provide intermediate quantiles for smooth transitions.}
 }
 \value{

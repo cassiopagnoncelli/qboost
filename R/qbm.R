@@ -103,6 +103,7 @@
 #'   )
 #' )
 #' }
+#' @export
 qbm <- function(
     ...,
     tau = 0.5,
