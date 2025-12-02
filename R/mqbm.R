@@ -136,7 +136,10 @@ mqbm <- function(
 
 .parse_mqbm_inputs <- function(dots) {
   if (length(dots) == 0) {
-    stop("Provide either a formula with data (containing 'symbol' column) or an `x`/`y`/`symbol` triplet.", call. = FALSE)
+    stop(
+      "Provide either a formula with data (containing 'symbol' column) or an `x`/`y`/`symbol` triplet.",
+      call. = FALSE
+    )
   }
 
   nm <- names(dots)
