@@ -1,4 +1,4 @@
-.PHONY: all build check install clean docs test lint style stats
+.PHONY: all release build check install clean docs test lint style stats
 
 R = /Library/Frameworks/R.framework/Resources/bin/R
 Rscript = /Library/Frameworks/R.framework/Resources/bin/Rscript
@@ -8,7 +8,9 @@ PACKAGE_DIR = builds
 PACKAGE_STAR = ${PACKAGE_DIR}/${PACKAGE_TARBALL}
 PACKAGE_LIB = ${PACKAGE_DIR}/library
 
-all: lint build install clean
+all: build install clean
+
+release: lint test docs check build
 
 build: clean docs
 	@${R} CMD build .
