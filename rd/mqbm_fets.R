@@ -4,6 +4,7 @@ library("fets")
 library("qetl")
 
 quotes <- qetl::get_sample_quotes()
+quotes <- quotes[symbol %in% unique(quotes$symbol)[seq_len(10)]]
 
 fets::fwd(quotes, lookahead = 15, inplace = TRUE)
 
@@ -26,8 +27,7 @@ meta <- decomposed$meta
 close <- decomposed$close
 volume <- decomposed$volume
 Y <- decomposed$Y
-X <- decomposed$X %>%
-  dplyr::select(-all_of(c("open", "high", "low")))
+X <- decomposed$X
 
 train_end <- as.Date("2023-05-31")
 val_end <- as.Date("2024-05-31")
@@ -47,18 +47,27 @@ mzX <- tibble::tibble(meta, zX)
 mczXY <- tibble::tibble(meta, close, zX, Y)
 zXY <- tibble::tibble(zX, Y)
 
+qXY <- tibble::tibble(meta[, "symbol"], select(Y, y = excursion_high), zX)
+qXY
+
 # Training
 cat("Training mqbm model...\n")
 fit <- mqbm(
-  y ~ x1 + x2,
-  data = train_df,
-  tau = 0.5,
-  nrounds = 100,
+  y ~ .,
+  data = qXY[train_idx, ],
+  multi = "symbol",
+  tau = 0.98,
+  nrounds = 400,
+  early_stopping_rounds = 20,
   nfolds = 3
 )
 
-# Print model summary
+# Fit model
 print(fit)
+
+summary(fit)
+
+# Use predict, fitted, etc
 
 # ------------------------------------------------------------------
 # Predictions
