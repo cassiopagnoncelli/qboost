@@ -14,7 +14,7 @@
 \value{
 A tibble with columns:
 \item{feature}{Feature name}
-\item{mean_gain}{Average information gain across all symbol models}
+\item{gain}{Average information gain across all symbol models}
 \item{sd_gain}{Standard deviation of information gain across symbols}
 \item{n_models}{Number of symbol models where this feature appears}
 }

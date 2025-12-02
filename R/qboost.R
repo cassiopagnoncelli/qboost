@@ -24,9 +24,3 @@ qboost <- function(
     seed = seed
   )
 }
-
-#' @rdname importance.qbm
-#' @export
-importance.qboost <- function(object, ...) {
-  importance.qbm(object, ...)
-}

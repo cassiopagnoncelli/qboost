@@ -24,3 +24,5 @@
 ^cran-comments\.md$
 ^NEWS\.md$
 ^CRAN_SUBMISSION_CHECKLIST\.md$
+^doc$
+^Meta$

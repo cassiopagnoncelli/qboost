@@ -79,7 +79,7 @@ pinball loss to a constant-quantile baseline.
 ## Feature importance
 
 ```{r}
-importance.qboost(fit)
+importance(fit)
 ```
 
 Use the `gain` column to interpret which variables contribute most to the fitted
