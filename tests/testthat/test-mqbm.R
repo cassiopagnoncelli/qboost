@@ -358,3 +358,106 @@ test_that("importance.mqbm works with custom multi parameter", {
   expect_gt(nrow(imp), 0)
   expect_true(all(c("feature", "gain", "sd_gain", "n_models") %in% names(imp)))
 })
+
+test_that("summary.mqbm returns correct structure", {
+  set.seed(123)
+  df <- data.frame(
+    x1 = rnorm(200),
+    x2 = rnorm(200),
+    symbol = sample(c("A", "B", "C"), 200, replace = TRUE)
+  )
+  df$y <- df$x1 * 0.8 + df$x2 * 0.3 + rnorm(200)
+  
+  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 30, nfolds = 2)
+  summ <- summary(fit)
+  
+  # Check class
+  expect_s3_class(summ, "mqbm_summary")
+  
+  # Check required components
+  expect_true(all(c("tau", "multi", "n_symbols", "symbols", "data_info", 
+                    "metrics", "calibration", "complexity", "symbol_table", 
+                    "importance", "timings") %in% names(summ)))
+  
+  # Check metrics structure
+  expect_true("overall" %in% names(summ$metrics))
+  expect_true("per_symbol" %in% names(summ$metrics))
+  expect_true(all(c("pinball_loss", "mae", "pseudo_r2") %in% names(summ$metrics$overall)))
+  
+  # Check calibration structure
+  expect_true(all(c("overall_coverage", "overall_qce", "coverage_sd") %in% names(summ$calibration)))
+  
+  # Check symbol table
+  expect_s3_class(summ$symbol_table, "tbl_df")
+  expect_equal(nrow(summ$symbol_table), 3)
+  expect_true(all(c("symbol", "n", "trees", "pinball", "mae", "pseudo_r2", 
+                    "coverage", "qce") %in% names(summ$symbol_table)))
+})
+
+test_that("summary.mqbm computes aggregate metrics correctly", {
+  set.seed(123)
+  df <- data.frame(
+    x1 = rnorm(200),
+    x2 = rnorm(200),
+    symbol = sample(c("A", "B"), 200, replace = TRUE)
+  )
+  df$y <- df$x1 * 0.5 + rnorm(200)
+  
+  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 30, nfolds = 2)
+  summ <- summary(fit)
+  
+  # Aggregate metrics should be computed
+  expect_false(is.na(summ$metrics$overall$pinball_loss))
+  expect_false(is.na(summ$metrics$overall$mae))
+  expect_false(is.na(summ$metrics$overall$pseudo_r2))
+  
+  # Per-symbol metrics should exist for each symbol
+  expect_equal(length(summ$metrics$per_symbol), 2)
+  expect_true(all(c("A", "B") %in% names(summ$metrics$per_symbol)))
+  
+  # Each symbol should have all metrics
+  for (sym in c("A", "B")) {
+    expect_true(all(c("n", "pinball", "mae", "pseudo_r2", "coverage", "qce") %in% 
+                    names(summ$metrics$per_symbol[[sym]])))
+  }
+})
+
+test_that("print.mqbm_summary works without error", {
+  set.seed(123)
+  df <- data.frame(
+    x1 = rnorm(200),
+    x2 = rnorm(200),
+    symbol = sample(c("A", "B"), 200, replace = TRUE)
+  )
+  df$y <- df$x1 * 0.5 + rnorm(200)
+  
+  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 30, nfolds = 2)
+  
+  # Detailed summary
+  summ_detailed <- summary(fit, detailed = TRUE)
+  expect_output(print(summ_detailed), "Multi-Symbol Quantile Gradient Boosting Model")
+  expect_output(print(summ_detailed), "Aggregate Training Metrics")
+  expect_output(print(summ_detailed), "Per-Symbol Summary")
+  
+  # Compact summary
+  summ_compact <- summary(fit, detailed = FALSE)
+  expect_output(print(summ_compact), "Multi-Symbol Quantile Gradient Boosting Model")
+  expect_output(print(summ_compact), "Use detailed = TRUE for full report")
+})
+
+test_that("summary.mqbm works with custom multi parameter", {
+  set.seed(123)
+  df <- data.frame(
+    x1 = rnorm(200),
+    x2 = rnorm(200),
+    category = sample(c("Cat1", "Cat2"), 200, replace = TRUE)
+  )
+  df$y <- df$x1 * 0.5 + rnorm(200)
+  
+  fit <- mqbm(y ~ x1 + x2, data = df, multi = "category", tau = 0.5, nrounds = 30, nfolds = 2)
+  summ <- summary(fit)
+  
+  expect_s3_class(summ, "mqbm_summary")
+  expect_equal(summ$multi, "category")
+  expect_equal(summ$n_symbols, 2)
+})
