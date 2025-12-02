@@ -1,3 +1,7 @@
+#' @importFrom graphics abline axis barplot grid hist legend lines mtext plot.new points segments text
+#' @importFrom stats coef complete.cases predict
+NULL
+
 utils::globalVariables(c(
   "coefficient",
   "coverage",
