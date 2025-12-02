@@ -240,7 +240,7 @@ print.mqbm_summary <- function(x, ...) {
   
   if (isTRUE(x$detailed)) {
     # Detailed output
-    cat("Multi-Symbol Quantile Gradient Boosting Model\n")
+    cat("Multi Quantile Gradient Boosting Model\n")
     cat(" Data:             ", x$data_info$n, " rows, ", x$data_info$p, " cols\n", sep = "")
     cat(" Multi:            ", x$multi, "\n", sep = "")
     cat(" Symbols:          ", x$n_symbols, " (", paste(x$symbols, collapse = ", "), ")\n", sep = "")
@@ -279,7 +279,7 @@ print.mqbm_summary <- function(x, ...) {
     
   } else {
     # Compact output
-    cat("Multi-Symbol Quantile Gradient Boosting Model\n")
+    cat("Multi Quantile Gradient Boosting Model\n")
     cat(" Symbols:          ", x$n_symbols, " (", x$multi, ")\n", sep = "")
     cat(" Tau:              ", format(x$tau, digits = 3), "\n", sep = "")
     cat(" Pinball loss:     ", format(x$metrics$overall$pinball_loss, digits = 4), "\n", sep = "")

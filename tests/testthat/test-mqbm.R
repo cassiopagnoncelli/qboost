@@ -435,13 +435,13 @@ test_that("print.mqbm_summary works without error", {
   
   # Detailed summary
   summ_detailed <- summary(fit, detailed = TRUE)
-  expect_output(print(summ_detailed), "Multi-Symbol Quantile Gradient Boosting Model")
+  expect_output(print(summ_detailed), "Multi Quantile Gradient Boosting Model")
   expect_output(print(summ_detailed), "Aggregate Training Metrics")
   expect_output(print(summ_detailed), "Per-Symbol Summary")
   
   # Compact summary
   summ_compact <- summary(fit, detailed = FALSE)
-  expect_output(print(summ_compact), "Multi-Symbol Quantile Gradient Boosting Model")
+  expect_output(print(summ_compact), "Multi Quantile Gradient Boosting Model")
   expect_output(print(summ_compact), "Use detailed = TRUE for full report")
 })
 
