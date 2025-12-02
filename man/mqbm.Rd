@@ -6,6 +6,7 @@
 \usage{
 mqbm(
   ...,
+  multi = "symbol",
   tau = 0.5,
   nrounds = 500,
   nfolds = 5,
@@ -16,8 +17,11 @@ mqbm(
 }
 \arguments{
 \item{...}{Either a formula with \code{data} argument (where \code{data} must
-contain a \code{symbol} column identifying groups), or an \code{x}/\code{y}/\code{symbol}
+contain a column specified by \code{multi} identifying groups), or an \code{x}/\code{y}/\code{multi}
 triplet for matrix input. Additional arguments are forwarded to \code{\link{qbm}}.}
+
+\item{multi}{Character string specifying the column name in \code{data} (for formula interface)
+or the name of the grouping variable to use as a multiplexer. Default is \code{"symbol"}.}
 
 \item{tau}{Target quantile level in (0, 1] applied to all symbol-specific models.
 Default is 0.5 (median).}

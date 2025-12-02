@@ -7,8 +7,10 @@
 #' multi-site studies, or any scenario where group-specific quantile behavior differs.
 #'
 #' @param ... Either a formula with \code{data} argument (where \code{data} must
-#'   contain a \code{symbol} column identifying groups), or an \code{x}/\code{y}/\code{symbol}
+#'   contain a column specified by \code{multi} identifying groups), or an \code{x}/\code{y}/\code{multi}
 #'   triplet for matrix input. Additional arguments are forwarded to \code{\link{qbm}}.
+#' @param multi Character string specifying the column name in \code{data} (for formula interface)
+#'   or the name of the grouping variable to use as a multiplexer. Default is \code{"symbol"}.
 #' @param tau Target quantile level in (0, 1] applied to all symbol-specific models.
 #'   Default is 0.5 (median).
 #' @param nrounds Maximum number of boosting iterations per symbol model. Default is 500.
@@ -89,6 +91,7 @@
 #' @export
 mqbm <- function(
     ...,
+    multi = "symbol",
     tau = 0.5,
     nrounds = 500,
     nfolds = 5,
@@ -98,7 +101,7 @@ mqbm <- function(
   start_time <- Sys.time()
 
   dots <- list(...)
-  parsed <- .parse_mqbm_inputs(dots)
+  parsed <- .parse_mqbm_inputs(dots, multi = multi)
 
   x <- parsed$x
   y <- as.numeric(parsed$y)
@@ -166,6 +169,7 @@ mqbm <- function(
     symbols = unique_symbols,
     symbol_info = symbol_info,
     tau = tau,
+    multi = multi,
     preprocess = parsed$preprocess,
     timings = list(
       start = start_time,
@@ -187,10 +191,10 @@ mqbm <- function(
   out
 }
 
-.parse_mqbm_inputs <- function(dots) {
+.parse_mqbm_inputs <- function(dots, multi = "symbol") {
   if (length(dots) == 0) {
     stop(
-      "Provide either a formula with data (containing 'symbol' column) or an `x`/`y`/`symbol` triplet.",
+      sprintf("Provide either a formula with data (containing '%s' column) or an `x`/`y`/`%s` triplet.", multi, multi),
       call. = FALSE
     )
   }
@@ -223,13 +227,13 @@ mqbm <- function(
 
     data <- dots[[data_idx]]
     
-    if (!"symbol" %in% names(data)) {
-      stop("`data` must contain a 'symbol' column.", call. = FALSE)
+    if (!multi %in% names(data)) {
+      stop(sprintf("`data` must contain a '%s' column.", multi), call. = FALSE)
     }
 
     # Extract symbol before processing formula
-    symbol <- data$symbol
-    data_without_symbol <- data[, names(data) != "symbol", drop = FALSE]
+    symbol <- data[[multi]]
+    data_without_symbol <- data[, names(data) != multi, drop = FALSE]
 
     mf <- stats::model.frame(formula, data = data_without_symbol, na.action = stats::na.pass)
     y <- stats::model.response(mf)
@@ -261,11 +265,11 @@ mqbm <- function(
     ))
   }
 
-  # x/y/symbol interface
+  # x/y/multi interface
   x_idx <- if ("x" %in% nm) which(nm == "x")[1] else 1L
   remaining <- setdiff(seq_along(dots), x_idx)
   if (length(remaining) == 0) {
-    stop("`y` and `symbol` must be provided when using `x`/`y`/`symbol` inputs.", call. = FALSE)
+    stop(sprintf("`y` and `%s` must be provided when using `x`/`y`/`%s` inputs.", multi, multi), call. = FALSE)
   }
   
   y_idx <- if ("y" %in% nm) {
@@ -276,10 +280,13 @@ mqbm <- function(
   
   remaining <- setdiff(remaining, y_idx)
   if (length(remaining) == 0) {
-    stop("`symbol` must be provided when using `x`/`y`/`symbol` inputs.", call. = FALSE)
+    stop(sprintf("`%s` must be provided when using `x`/`y`/`%s` inputs.", multi, multi), call. = FALSE)
   }
   
-  symbol_idx <- if ("symbol" %in% nm) {
+  # Try both the multi parameter name and "symbol" for backward compatibility
+  symbol_idx <- if (multi %in% nm) {
+    which(nm == multi)[1]
+  } else if ("symbol" %in% nm) {
     which(nm == "symbol")[1]
   } else {
     remaining[1]

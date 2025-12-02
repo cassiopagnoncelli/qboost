@@ -6,12 +6,15 @@
 #'
 #' @param object A fitted mqbm model object returned by \code{\link{mqbm}}.
 #' @param newdata A data.frame or matrix of predictor variables. Must either
-#'   contain a \code{symbol} column identifying which model to use for each
-#'   observation, or \code{symbol} must be provided as a separate argument.
-#' @param symbol Optional character vector specifying which symbol-specific model
+#'   contain a column with the name specified by \code{object$multi} (default \code{"symbol"})
+#'   identifying which model to use for each observation, or \code{multi} must be provided
+#'   as a separate argument.
+#' @param multi Optional character vector specifying which symbol-specific model
 #'   to use for each row of \code{newdata}. If \code{NULL} (default), the
-#'   function looks for a \code{symbol} column in \code{newdata}. Must contain
-#'   only symbols that were present in the training data.
+#'   function looks for a column named \code{object$multi} in \code{newdata}. 
+#'   For backward compatibility, also accepts \code{symbol} as an argument name.
+#'   Must contain only symbols that were present in the training data.
+#' @param symbol Deprecated. Use \code{multi} instead. Kept for backward compatibility.
 #' @param ... Additional arguments (currently unused).
 #'
 #' @return A numeric vector of length \code{nrow(newdata)} containing predicted
@@ -66,7 +69,7 @@
 #'
 #' @export
 #' @method predict mqbm
-predict.mqbm <- function(object, newdata, symbol = NULL, ...) {
+predict.mqbm <- function(object, newdata, multi = NULL, symbol = NULL, ...) {
   if (!inherits(object, "mqbm")) {
     stop("`object` must be a mqbm model.", call. = FALSE)
   }
@@ -74,19 +77,43 @@ predict.mqbm <- function(object, newdata, symbol = NULL, ...) {
     stop("`newdata` is required for prediction.", call. = FALSE)
   }
 
-  # Extract symbol from newdata or use provided symbol argument
-  if (is.null(symbol)) {
-    if (is.data.frame(newdata) && "symbol" %in% names(newdata)) {
-      symbol <- as.character(newdata$symbol)
-      # Remove symbol from newdata for prediction
-      newdata_for_pred <- newdata[, names(newdata) != "symbol", drop = FALSE]
+  # Get the multi column name from the object, default to "symbol"
+  multi_colname <- if (!is.null(object$multi)) object$multi else "symbol"
+  
+  # For backward compatibility: if symbol argument is provided, use it
+  if (!is.null(symbol)) {
+    multi <- symbol
+  }
+
+  # Extract multi/symbol from newdata or use provided multi argument
+  if (is.null(multi)) {
+    # Try to find the column in newdata
+    if (is.data.frame(newdata)) {
+      if (multi_colname %in% names(newdata)) {
+        multi <- as.character(newdata[[multi_colname]])
+        # Remove multi column from newdata for prediction
+        newdata_for_pred <- newdata[, names(newdata) != multi_colname, drop = FALSE]
+      } else {
+        stop(
+          sprintf("`%s` must be provided either as a column in `newdata` or as a separate argument.",
+                  multi_colname),
+          call. = FALSE
+        )
+      }
     } else {
-      stop("`symbol` must be provided either as a column in `newdata` or as a separate argument.", call. = FALSE)
+      stop(
+        sprintf("`%s` must be provided either as a column in `newdata` or as a separate argument.",
+                multi_colname),
+        call. = FALSE
+      )
     }
   } else {
-    symbol <- as.character(symbol)
+    multi <- as.character(multi)
     newdata_for_pred <- newdata
   }
+  
+  # Use 'symbol' as the internal variable name for clarity
+  symbol <- multi
 
   # Validate symbol length
   n_rows <- if (is.data.frame(newdata_for_pred) || is.matrix(newdata_for_pred)) {

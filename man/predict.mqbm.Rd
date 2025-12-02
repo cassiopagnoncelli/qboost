@@ -4,19 +4,23 @@
 \alias{predict.mqbm}
 \title{Predict quantiles from a symbol-based mqbm model}
 \usage{
-\method{predict}{mqbm}(object, newdata, symbol = NULL, ...)
+\method{predict}{mqbm}(object, newdata, multi = NULL, symbol = NULL, ...)
 }
 \arguments{
 \item{object}{A fitted mqbm model object returned by \code{\link{mqbm}}.}
 
 \item{newdata}{A data.frame or matrix of predictor variables. Must either
-contain a \code{symbol} column identifying which model to use for each
-observation, or \code{symbol} must be provided as a separate argument.}
+contain a column with the name specified by \code{object$multi} (default \code{"symbol"})
+identifying which model to use for each observation, or \code{multi} must be provided
+as a separate argument.}
 
-\item{symbol}{Optional character vector specifying which symbol-specific model
+\item{multi}{Optional character vector specifying which symbol-specific model
 to use for each row of \code{newdata}. If \code{NULL} (default), the
-function looks for a \code{symbol} column in \code{newdata}. Must contain
-only symbols that were present in the training data.}
+function looks for a column named \code{object$multi} in \code{newdata}.
+For backward compatibility, also accepts \code{symbol} as an argument name.
+Must contain only symbols that were present in the training data.}
+
+\item{symbol}{Deprecated. Use \code{multi} instead. Kept for backward compatibility.}
 
 \item{...}{Additional arguments (currently unused).}
 }

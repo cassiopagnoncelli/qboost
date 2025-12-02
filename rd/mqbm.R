@@ -82,4 +82,39 @@ for (sym in fit$symbols) {
   }
 }
 
+# ------------------------------------------------------------------
+# Custom multi parameter example
+# ------------------------------------------------------------------
+cat("\n\nCustom multi parameter example:\n")
+
+# Create data with a different grouping column
+df2 <- data.frame(
+  x1 = rnorm(200),
+  x2 = rnorm(200),
+  group = sample(c("GroupA", "GroupB", "GroupC"), 200, replace = TRUE)
+)
+df2$y <- df2$x1 * 0.5 + rnorm(200)
+
+# Train with custom multi parameter
+fit2 <- mqbm(
+  y ~ x1 + x2,
+  data = df2,
+  multi = "group",  # Use "group" instead of default "symbol"
+  tau = 0.5,
+  nrounds = 50,
+  nfolds = 3
+)
+
+cat("Multi parameter used:", fit2$multi, "\n")
+cat("Groups:", paste(fit2$symbols, collapse = ", "), "\n")
+
+# Predictions work with the group column
+newdata <- data.frame(
+  x1 = rnorm(50),
+  x2 = rnorm(50),
+  group = sample(c("GroupA", "GroupB", "GroupC"), 50, replace = TRUE)
+)
+preds_custom <- predict(fit2, newdata)
+cat("Custom predictions generated:", length(preds_custom), "\n")
+
 cat("\nDemo complete!\n")

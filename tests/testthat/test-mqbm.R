@@ -193,3 +193,95 @@ test_that("mqbm works with different tau values per symbol", {
   
   expect_false(all(preds_median == preds_upper))
 })
+
+test_that("mqbm works with custom multi parameter", {
+  set.seed(123)
+  df <- data.frame(
+    x1 = rnorm(200),
+    x2 = rnorm(200),
+    group = sample(c("Group1", "Group2", "Group3"), 200, replace = TRUE)
+  )
+  df$y <- df$x1 * 0.5 + rnorm(200)
+  
+  # Test with custom multi column name
+  fit <- mqbm(y ~ x1 + x2, data = df, multi = "group", tau = 0.5, nrounds = 20, nfolds = 2)
+  
+  expect_s3_class(fit, "mqbm")
+  expect_equal(fit$multi, "group")
+  expect_equal(length(fit$symbols), 3)
+  expect_true(all(c("Group1", "Group2", "Group3") %in% fit$symbols))
+  
+  # Prediction should work with group column
+  newdata <- data.frame(
+    x1 = rnorm(50),
+    x2 = rnorm(50),
+    group = sample(c("Group1", "Group2", "Group3"), 50, replace = TRUE)
+  )
+  
+  preds <- predict(fit, newdata)
+  expect_length(preds, 50)
+  expect_false(any(is.na(preds)))
+})
+
+test_that("mqbm multi parameter works with x/y interface", {
+  set.seed(123)
+  df <- data.frame(
+    x1 = rnorm(200),
+    x2 = rnorm(200),
+    category = sample(c("Cat1", "Cat2"), 200, replace = TRUE)
+  )
+  df$y <- df$x1 * 0.5 + rnorm(200)
+  
+  # Test x/y/category interface (using named argument)
+  fit <- mqbm(
+    x = df[, c("x1", "x2")],
+    y = df$y,
+    category = df$category,
+    multi = "category",
+    tau = 0.5,
+    nrounds = 20,
+    nfolds = 2
+  )
+  
+  expect_s3_class(fit, "mqbm")
+  expect_equal(fit$multi, "category")
+  expect_equal(length(fit$symbols), 2)
+  
+  # Prediction with multi argument
+  newdata <- data.frame(
+    x1 = rnorm(50),
+    x2 = rnorm(50)
+  )
+  categories <- sample(c("Cat1", "Cat2"), 50, replace = TRUE)
+  
+  preds <- predict(fit, newdata, multi = categories)
+  expect_length(preds, 50)
+  expect_false(any(is.na(preds)))
+})
+
+test_that("mqbm backward compatibility with symbol parameter", {
+  set.seed(123)
+  df <- data.frame(
+    x1 = rnorm(200),
+    x2 = rnorm(200),
+    symbol = sample(c("A", "B"), 200, replace = TRUE)
+  )
+  df$y <- df$x1 * 0.5 + rnorm(200)
+  
+  # Should still work without specifying multi (defaults to "symbol")
+  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 20, nfolds = 2)
+  
+  expect_s3_class(fit, "mqbm")
+  expect_equal(fit$multi, "symbol")
+  
+  # Prediction should work with symbol argument (backward compatibility)
+  newdata <- data.frame(
+    x1 = rnorm(50),
+    x2 = rnorm(50)
+  )
+  symbols <- sample(c("A", "B"), 50, replace = TRUE)
+  
+  preds <- predict(fit, newdata, symbol = symbols)
+  expect_length(preds, 50)
+  expect_false(any(is.na(preds)))
+})
