@@ -231,15 +231,3 @@ print.qbm_summary <- function(x, ...) {
 
   invisible(x)
 }
-
-#' Print method for `qbm`
-#'
-#' @param x A `qbm` object.
-#' @param ... Additional arguments (unused).
-#'
-#' @return The input object, invisibly.
-#' @export
-print.qbm <- function(x, ...) {
-  summary(x)
-  invisible(x)
-}

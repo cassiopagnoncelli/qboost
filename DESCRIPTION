@@ -1,7 +1,7 @@
 Package: qboost
 Type: Package
 Title: Quantile Gradient Boosting Models
-Version: 0.4.8
+Version: 0.5.1
 Authors@R:
     person("Cassio", "Pagnoncelli", , "cassiopagnoncelli@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0009-0000-7114-7008"))
