@@ -47,7 +47,7 @@ mzX <- tibble::tibble(meta, zX)
 mczXY <- tibble::tibble(meta, close, zX, Y)
 zXY <- tibble::tibble(zX, Y)
 
-qXY <- tibble::tibble(meta[, "symbol"], select(Y, y = excursion_high), zX)
+qXY <- tibble::tibble(meta[, "symbol"], dplyr::select(Y, y = excursion_high), zX)
 qXY
 
 # Training

@@ -24,6 +24,7 @@
 #'   \item{models}{Named list of fitted \code{\link{qbm}} objects, one per symbol}
 #'   \item{symbols}{Character vector of unique symbol identifiers}
 #'   \item{symbol_info}{List with sample size and indices for each symbol}
+#'   \item{ecdf_funs}{Named list of ECDF functions, one per symbol, built from training y values}
 #'   \item{tau}{The target quantile level used}
 #'   \item{preprocess}{Preprocessing information (for formula interface)}
 #'   \item{timings}{Training time information}
@@ -35,8 +36,10 @@
 #' \enumerate{
 #'   \item Partitions data by symbol/group
 #'   \item Trains independent \code{\link{qbm}} models for each symbol
+#'   \item Builds symbol-specific ECDF functions from training y values
 #'   \item Maintains separate hyperparameters and feature importance per symbol
 #'   \item Routes predictions to appropriate symbol-specific model
+#'   \item Transforms predictions through symbol-specific ECDF to return probabilities
 #' }
 #'
 #' This is beneficial when:
@@ -121,6 +124,7 @@ mqbm <- function(
   # Train one qbm per symbol
   models <- list()
   symbol_info <- list()
+  ecdf_funs <- list()
   
   for (sym in unique_symbols) {
     idx <- which(symbol == sym)
@@ -132,6 +136,9 @@ mqbm <- function(
       n = length(idx),
       indices = idx
     )
+    
+    # Build ECDF for this symbol's training y values
+    ecdf_funs[[sym]] <- stats::ecdf(y_sym)
     
     # Train qbm for this symbol
     if (parsed$preprocess$type == "formula") {
@@ -168,6 +175,7 @@ mqbm <- function(
     models = models,
     symbols = unique_symbols,
     symbol_info = symbol_info,
+    ecdf_funs = ecdf_funs,
     tau = tau,
     multi = multi,
     preprocess = parsed$preprocess,
