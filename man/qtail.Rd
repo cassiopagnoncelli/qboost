@@ -2,7 +2,7 @@
 % Please edit documentation in R/qtail.R
 \name{qtail}
 \alias{qtail}
-\title{Fit qtail model}
+\title{Fit extreme quantile tail model with EVT}
 \usage{
 qtail(
   ...,
@@ -14,45 +14,131 @@ qtail(
 )
 }
 \arguments{
-\item{...}{Either a formula and optional \code{data} argument or an \code{x}/\code{y} pair
-followed by additional arguments.}
+\item{...}{Either a formula with optional \code{data} argument, or an
+\code{x}/\code{y} pair for matrix input. Additional arguments forwarded
+to \code{\link{qbm}} via the \code{params} list.}
 
-\item{taus}{Quantile levels to fit. If NULL, defaults based on tail type.}
+\item{taus}{Numeric vector of quantile levels to fit with \code{\link{qbm}}.
+If \code{NULL}, defaults to \code{c(0.95, 0.97, 0.99, 0.993, 0.999)} for
+upper tail or \code{c(0.05, 0.03, 0.01, 0.007, 0.001)} for lower tail.
+These quantiles are stacked to form base predictions.}
 
-\item{tail}{Tail type: "upper" or "lower"}
+\item{tail}{Character string specifying tail direction: \code{"upper"} for
+right tail (high values) or \code{"lower"} for left tail (low values).
+Default is \code{"upper"}.}
 
-\item{threshold_tau}{Threshold quantile for EVT. If NULL, defaults based on tail type.}
+\item{threshold_tau}{Numeric quantile level defining the EVT threshold.
+Exceedances beyond this threshold are modeled via GPD. Must be one of the
+values in \code{taus}. If \code{NULL}, defaults to 0.99 for upper tail
+or 0.01 for lower tail.}
 
-\item{params}{Parameters passed to qbm (nrounds, nfolds, etc.)}
+\item{params}{Named list of parameters passed to \code{\link{qbm}} for each
+quantile model. Common parameters: \code{nrounds}, \code{nfolds},
+\code{early_stopping_rounds}. See \code{\link{qbm}} for details.}
 
-\item{verbose}{Logical; if TRUE, print progress messages}
+\item{verbose}{Logical; if \code{TRUE}, prints detailed progress messages
+for each fitting stage. Default is \code{FALSE}.}
 }
 \value{
-An object of class "qtail"
+An object of class \code{qtail} containing:
+\item{taus}{Vector of fitted quantile levels}
+\item{tau_target}{Target extreme quantile (max or min of taus)}
+\item{threshold_tau}{EVT threshold quantile level}
+\item{tail}{Tail direction ("upper" or "lower")}
+\item{models}{Named list of fitted \code{\link{qbm}} objects for each tau}
+\item{stack}{Elastic net stacking coefficients combining quantile predictions}
+\item{evt}{GPD parameters (xi = shape, beta = scale) and diagnostics}
+\item{call}{The matched call}
+\item{x}{Training feature matrix}
+\item{y}{Training response vector}
+\item{n}{Number of training observations}
+\item{preprocess}{Preprocessing information (for formula interface)}
 }
 \description{
-Provides a clean interface for extreme quantile tail modeling using
-LightGBM quantile regression combined with Extreme Value Theory (EVT).
-Accepts either a formula + data or an \code{x}/\code{y} pair.
+Combines gradient boosted quantile regression (\code{\link{qbm}}) with
+Extreme Value Theory (EVT) using Generalized Pareto Distribution (GPD)
+to model extreme quantiles in distributional tails. Uses a multi-stage
+approach: (1) fit multiple quantile models, (2) stack predictions via
+elastic net, (3) fit GPD to exceedances beyond threshold, enabling
+reliable extrapolation to extreme quantiles (e.g., 99.9th percentile).
+}
+\details{
+The qtail modeling approach consists of five stages:
+\enumerate{
+\item \strong{Data preprocessing}: Remove NA values and validate inputs
+\item \strong{Quantile modeling}: Fit separate \code{\link{qbm}} models
+for each tau in \code{taus}
+\item \strong{Stacking}: Build design matrix from quantile predictions
+and apply PAVA monotonicity correction
+\item \strong{Elastic net}: Fit elastic net (default: ridge regression)
+to combine quantile predictions with non-negative weights
+\item \strong{EVT fitting}: Fit GPD to exceedances beyond
+\code{threshold_tau} to enable extrapolation to extreme quantiles
+}
+
+The GPD is fit using the \code{evgam} package. If fitting fails (common
+with few exceedances), default parameters are used (xi=0.1, beta=sd(exceedances)).
+
+This approach is particularly useful for:
+\itemize{
+\item Risk modeling (Value-at-Risk, Expected Shortfall)
+\item Extreme event prediction (floods, failures, market crashes)
+\item Tail-conditional forecasting
+\item Scenarios with heavy-tailed distributions
+}
 }
 \examples{
 \dontrun{
-# Using formula interface
+# Simulate heavy-tailed data
 set.seed(123)
+n <- 300
 df <- data.frame(
-  x1 = rnorm(200),
-  x2 = rnorm(200)
+  x1 = rnorm(n),
+  x2 = rnorm(n)
 )
-df$y <- df$x1 * 2 + df$x2 * 0.5 + rt(200, df = 3) * 2
+# Response with Student-t errors (heavy tails)
+df$y <- 2 * df$x1 + 0.5 * df$x2 + rt(n, df = 3) * 2
 
-fit <- qtail(y ~ x1 + x2,
-  data = df, tail = "upper",
-  params = list(nrounds = 50, nfolds = 3)
+# Fit upper tail model (for extreme high values)
+fit_upper <- qtail(
+  y ~ x1 + x2,
+  data = df,
+  tail = "upper",
+  taus = c(0.95, 0.975, 0.99, 0.995, 0.999),
+  threshold_tau = 0.99,
+  params = list(nrounds = 100, nfolds = 3),
+  verbose = TRUE
 )
 
-# Using x/y interface
-x <- as.matrix(df[, c("x1", "x2")])
+# Fit lower tail model (for extreme low values)
+fit_lower <- qtail(
+  y ~ x1 + x2,
+  data = df,
+  tail = "lower",
+  taus = c(0.05, 0.025, 0.01, 0.005, 0.001),
+  threshold_tau = 0.01,
+  params = list(nrounds = 100, nfolds = 3)
+)
+
+print(fit_upper)
+summary(fit_upper)
+
+# Predict on new data
+newdata <- data.frame(x1 = c(-2, 0, 2), x2 = c(0, 1, -1))
+predict(fit_upper, newdata)
+
+# Access GPD parameters
+fit_upper$evt$xi     # Shape parameter
+fit_upper$evt$beta   # Scale parameter
+
+# Matrix interface
+X <- as.matrix(df[, c("x1", "x2")])
 y <- df$y
-fit <- qtail(x, y, tail = "upper", params = list(nrounds = 50, nfolds = 3))
+fit_matrix <- qtail(X, y, tail = "upper", params = list(nrounds = 100))
 }
+}
+\seealso{
+\code{\link{predict.qtail}}, \code{\link{summary.qtail}},
+\code{\link{plot.qtail}}, \code{\link{residuals.qtail}},
+\code{\link{fitted.qtail}}, \code{\link{qbm}}
 }

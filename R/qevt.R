@@ -1,38 +1,112 @@
-#' Fit extreme quantile model with EVT and PAVA monotonicity
+#' Fit extreme quantile model with EVT and conditional modeling
 #'
-#' Provides a clean interface for extreme quantile modeling using
-#' LightGBM quantile regression combined with Extreme Value Theory (EVT).
-#' Accepts either a formula + data or an `x`/`y` pair.
+#' Advanced extreme quantile modeling combining three components: (1) exceedance
+#' probability classifier determining likelihood of exceeding a high threshold,
+#' (2) Generalized Pareto Distribution (GPD) via Maximum Likelihood Estimation
+#' for tail behavior, (3) ensemble of sub-quantile \code{\link{qbm}} models for
+#' smooth interpolation. Predictions are monotonized using PAVA. Particularly
+#' suited for modeling ultra-extreme quantiles (e.g., 99.99th percentile) where
+#' data are sparse.
 #'
-#' @param ... Either a formula and optional `data` argument or an `x`/`y` pair
-#'   followed by additional arguments.
-#' @param tau_target Final extreme tau (default 0.9999)
-#' @param taus Vector of EVT quantiles including threshold and intermediate values
-#'   (default c(0.997, 0.9985, 0.999, 0.9993)). The first value is the EVT threshold.
-#' @return Object of class 'qevt'
-#' @export
+#' @param ... Either a formula with optional \code{data} argument, or an
+#'   \code{x}/\code{y} pair for matrix input. Additional arguments are currently
+#'   forwarded to internal fitting functions.
+#' @param tau_target Numeric scalar defining the target extreme quantile level.
+#'   Default is 0.98 (98.00th percentile). This is the quantile level that
+#'   predictions will target.
+#' @param taus Numeric vector of intermediate EVT quantile levels between the
+#'   threshold and target. Default is \code{c(0.95, 0.98, 0.99, 0.993, 0.999)}.
+#'   The first value (0.95) serves as the EVT threshold (tau0). Additional
+#'   values provide intermediate quantiles for smooth transitions.
+#'
+#' @return An object of class \code{qevt} containing:
+#'   \item{exceed_model}{Binary classifier (LightGBM) predicting exceedance probability}
+#'   \item{gpd}{GPD fit results (xi = shape, beta = scale, convergence status)}
+#'   \item{severity_model}{LightGBM regression model for exceedance magnitudes (fallback)}
+#'   \item{sub_models}{Named list of \code{\link{qbm}} models at sub-threshold quantiles}
+#'   \item{tau_grid_sub}{Vector of sub-threshold quantiles (default: 0.95, 0.975, 0.99, 0.995)}
+#'   \item{taus}{Input EVT quantile vector}
+#'   \item{tau0}{EVT threshold quantile (first element of taus)}
+#'   \item{taus_evt}{Intermediate EVT quantiles}
+#'   \item{tau_target}{Target extreme quantile}
+#'   \item{u}{Threshold value (tau0 quantile of training data)}
+#'   \item{taus_full}{Complete grid of all quantiles (sub + EVT + target)}
+#'   \item{train_x}{Training feature matrix}
+#'   \item{train_y}{Training response vector}
+#'   \item{preprocess}{Preprocessing information (for formula interface)}
+#'
+#' @details
+#' The qevt fitting process consists of four stages:
+#' \enumerate{
+#'   \item \strong{Exceedance Classifier}: Train LightGBM binary classifier to
+#'     predict P(Y > u | X) where u is the tau0 quantile
+#'   \item \strong{GPD Fitting}: Fit Generalized Pareto Distribution to exceedances
+#'     (Y - u | Y > u) using MLE. Also fit severity model (LightGBM regression)
+#'     as fallback for cases where GPD fails or is unreliable
+#'   \item \strong{Sub-Quantile Models}: Train \code{\link{qbm}} models at
+#'     quantiles below threshold (default: 0.95, 0.975, 0.99, 0.995) for smooth
+#'     interpolation in non-extreme regions
+#'   \item \strong{Assembly}: Combine all components into qevt object with
+#'     full quantile grid for prediction
+#' }
+#'
+#' Key differences from \code{\link{qtail}}:
+#' \itemize{
+#'   \item Uses exceedance probability model instead of stacking
+#'   \item Includes severity regression as GPD fallback
+#'   \item Focuses on single target quantile rather than multiple taus
+#'   \item Better suited for ultra-extreme quantiles (>99.9%)
+#' }
+#'
+#' @seealso \code{\link{predict.qevt}}, \code{\link{summary.qevt}},
+#'   \code{\link{plot.qevt}}, \code{\link{fitted.qevt}},
+#'   \code{\link{residuals.qevt}}, \code{\link{qtail}}, \code{\link{qbm}}
 #'
 #' @examples
 #' \dontrun{
-#' # Using formula interface
+#' # Simulate data with heavy right tail
 #' set.seed(123)
+#' n <- 500
 #' df <- data.frame(
-#'   x1 = rnorm(200),
-#'   x2 = rnorm(200)
+#'   x1 = rnorm(n),
+#'   x2 = rnorm(n)
 #' )
-#' df$y <- df$x1 * 2 + df$x2 * 0.5 + rt(200, df = 3) * 2
+#' # Pareto-like tail behavior
+#' df$y <- exp(df$x1 * 0.5 + df$x2 * 0.3 + rnorm(n, sd = 0.5))
 #'
-#' fit <- qevt(y ~ x1 + x2, data = df)
+#' # Fit qevt model for ultra-extreme quantile
+#' fit <- qevt(
+#'   y ~ x1 + x2,
+#'   data = df,
+#'   tau_target = 0.9999,  # 99.99th percentile
+#'   taus = c(0.997, 0.9985, 0.999, 0.9993)
+#' )
 #'
-#' # Using x/y interface
-#' x <- as.matrix(df[, c("x1", "x2")])
+#' print(fit)
+#' summary(fit)
+#'
+#' # Predictions
+#' newdata <- data.frame(x1 = c(-1, 0, 1), x2 = c(0, 0, 0))
+#' predict(fit, newdata)
+#'
+#' # Access model components
+#' fit$gpd$xi           # GPD shape parameter
+#' fit$gpd$beta         # GPD scale parameter
+#' fit$gpd$converged    # Convergence status
+#'
+#' # Matrix interface
+#' X <- as.matrix(df[, c("x1", "x2")])
 #' y <- df$y
-#' fit <- qevt(x, y)
+#' fit2 <- qevt(X, y, tau_target = 0.9995)
+#'
+#' # Different target quantiles
+#' fit_9999 <- qevt(y ~ x1 + x2, data = df, tau_target = 0.9999)
+#' fit_99999 <- qevt(y ~ x1 + x2, data = df, tau_target = 0.99999)
 #' }
 qevt <- function(
     ...,
-    tau_target = 0.9999,
-    taus = c(0.997, 0.9985, 0.999, 0.9993)) {
+    tau_target = 0.98,
+    taus = c(0.95, 0.98, 0.99, 0.993, 0.999)) {
   # Parse inputs
   parsed <- .parse_qevt_inputs(list(...))
   X <- if (!is.matrix(parsed$x)) data.matrix(parsed$x) else parsed$x

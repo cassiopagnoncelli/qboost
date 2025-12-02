@@ -2,7 +2,7 @@
 % Please edit documentation in R/predict.qtail.R
 \name{predict.qtail}
 \alias{predict.qtail}
-\title{Predict method for qtail}
+\title{Predict extreme quantiles from a qtail model}
 \usage{
 \method{predict}{qtail}(
   object,
@@ -13,19 +13,94 @@
 )
 }
 \arguments{
-\item{object}{A qtail object}
+\item{object}{A fitted qtail model object returned by \code{\link{qtail}}.}
 
-\item{newdata}{Feature matrix for prediction}
+\item{newdata}{A data.frame or matrix of predictor variables with the same
+structure as training data. For models fit with a formula, provide a
+data.frame with predictor columns (factor levels handled automatically).}
 
-\item{type}{Type of prediction: "final", "stack", "grid", or "evt"}
+\item{type}{Character string specifying prediction type:
+\itemize{
+\item \code{"final"} (default): Complete prediction including EVT extension
+to target extreme quantile
+\item \code{"stack"}: Stacked prediction from elastic net (without EVT)
+\item \code{"grid"}: Matrix of predictions from individual quantile models
+(one column per tau)
+\item \code{"evt"}: EVT extension component only (GPD-based extrapolation)
+}}
 
-\item{tau_override}{Optional tau override for target quantile}
+\item{tau_override}{Optional numeric value to override the target quantile
+level for prediction. If \code{NULL}, uses \code{object$tau_target}.
+Useful for predicting at different extreme quantiles than the training target.}
 
-\item{...}{Additional arguments (not used)}
+\item{...}{Additional arguments (currently unused).}
 }
 \value{
-Predicted values
+Depends on \code{type}:
+\itemize{
+\item \code{"final"}: Numeric vector of extreme quantile predictions
+\item \code{"stack"}: Numeric vector of stacked predictions (pre-EVT)
+\item \code{"grid"}: Matrix with one column per tau in \code{object$taus}
+\item \code{"evt"}: Numeric vector of EVT extension values
+}
 }
 \description{
-Predict method for qtail
+Generates predictions at extreme quantile levels using a multi-stage approach:
+(1) predict from individual \code{\link{qbm}} models at each tau, (2) stack
+predictions using elastic net weights, (3) extend to extreme quantiles via
+Generalized Pareto Distribution (GPD) from Extreme Value Theory. Supports
+multiple output types for diagnosis and analysis.
+}
+\details{
+The prediction process consists of three stages:
+\enumerate{
+\item \strong{Grid predictions}: Generate predictions from each quantile-specific
+\code{\link{qbm}} model and apply PAVA monotonicity correction
+\item \strong{Stacking}: Combine grid predictions using elastic net weights
+learned during training
+\item \strong{EVT extension}: Extrapolate from threshold quantile to target
+extreme quantile using GPD parameters (xi = shape, beta = scale)
+}
+
+The GPD extension formula:
+\itemize{
+\item Upper tail: \code{q_final = q_stack + (beta/xi) * (p^(-xi) - 1)}
+where \code{p = (1-tau_target)/(1-threshold_tau)}
+\item Lower tail: \code{q_final = q_stack - (beta/xi) * (p^(-xi) - 1)}
+where \code{p = tau_target/threshold_tau}
+}
+
+Setting \code{type = "stack"} or \code{type = "grid"} is useful for
+diagnosing model behavior or when EVT extrapolation is not desired.
+}
+\examples{
+\dontrun{
+# Train qtail model
+df <- data.frame(x1 = rnorm(200), x2 = rnorm(200))
+df$y <- df$x1 * 2 + rt(200, df = 3) * 2
+fit <- qtail(y ~ x1 + x2, data = df, tail = "upper",
+             params = list(nrounds = 100))
+
+# Predict at default target quantile
+newdata <- data.frame(x1 = c(-1, 0, 1), x2 = c(0, 0, 0))
+predict(fit, newdata)  # type = "final" by default
+
+# Different prediction types
+predict(fit, newdata, type = "stack")  # Stacked only
+predict(fit, newdata, type = "grid")   # All quantile models
+predict(fit, newdata, type = "evt")    # EVT component only
+
+# Override target quantile
+predict(fit, newdata, tau_override = 0.9999)  # Even more extreme
+
+# Decompose predictions
+stack_pred <- predict(fit, newdata, type = "stack")
+evt_ext <- predict(fit, newdata, type = "evt")
+final_pred <- predict(fit, newdata, type = "final")
+# Relationship: final ≈ stack + evt (for upper tail)
+}
+
+}
+\seealso{
+\code{\link{qtail}}, \code{\link{fitted.qtail}}, \code{\link{residuals.qtail}}
 }
