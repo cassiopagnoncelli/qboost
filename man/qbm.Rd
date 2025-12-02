@@ -26,44 +26,120 @@ qboost(
 )
 }
 \arguments{
-\item{...}{Either a formula and optional \code{data} argument or an \code{x}/\code{y} pair
-followed by additional arguments forwarded to \code{lightgbm::lgb.cv()} /
+\item{...}{Either a formula and optional \code{data} argument, or an \code{x}/\code{y} pair.
+Additional arguments are forwarded to \code{lightgbm::lgb.cv()} and
 \code{lightgbm::lgb.train()}.}
 
-\item{tau}{Target quantile in (0, 1].}
+\item{tau}{Target quantile level in (0, 1]. Use 0.5 for median regression,
+values < 0.5 for lower quantiles, and values > 0.5 for upper quantiles.
+Default is 0.5 (median).}
 
-\item{nrounds}{Maximum number of boosting iterations.}
+\item{nrounds}{Maximum number of boosting iterations. The actual number used
+may be less if early stopping is triggered. Default is 500.}
 
-\item{nfolds}{Number of cross-validation folds.}
+\item{nfolds}{Number of cross-validation folds for determining the optimal
+number of iterations. Default is 5.}
 
-\item{params}{Optional named list of extra LightGBM parameters.}
+\item{params}{Optional named list of additional LightGBM parameters to override
+defaults. Common parameters include \code{learning_rate}, \code{num_leaves},
+\code{max_depth}, \code{min_data_in_leaf}, and \code{feature_fraction}.}
 
-\item{early_stopping_rounds}{Early stopping patience in CV.}
+\item{early_stopping_rounds}{Number of rounds without improvement in CV metric
+before stopping. Default is 50.}
 
-\item{seed}{Random seed for reproducibility.}
+\item{seed}{Random seed for reproducibility of cross-validation splits and
+model training. Default is 1.}
 }
 \value{
-An object of class \code{qbm}.
+An object of class \code{qbm} containing:
+\item{model}{The fitted LightGBM model object}
+\item{tau}{The target quantile level}
+\item{best_iter}{Optimal number of iterations from cross-validation}
+\item{metrics}{Training metrics (pinball loss, MAE, pseudo-R²)}
+\item{calibration}{Calibration statistics (coverage, QCE, slope/intercept)}
+\item{tails}{Tail spread metrics}
+\item{complexity}{Model complexity measures (leaves, gain per leaf, entropy)}
+\item{importance}{Feature importance data frame}
+\item{residuals}{Residual statistics (median, IQR, skewness)}
+\item{timings}{Timing information}
+\item{data_info}{Dataset dimensions}
+\item{cv_settings}{Cross-validation settings}
+\item{preprocess}{Preprocessing information (for formula interface)}
+\item{params_used}{Final hyperparameters used}
+\item{training}{Training data (y and fitted values)}
 }
 \description{
 Provides a clean, \code{lm}-style interface for quantile regression using
-LightGBM. Accepts either a formula + data or an \code{x}/\code{y} pair, cross-validates
-to find the best iteration, refits on full data, and computes rich
-diagnostics and calibration metrics.
+LightGBM gradient boosting. The function supports both formula and matrix
+input, automatically performs cross-validation to determine optimal iterations,
+refits on the full training data, and computes comprehensive diagnostics
+including calibration metrics, feature importance, and residual statistics.
 
 These wrappers keep the user-facing \code{qboost()} API available while the core
 implementation lives in \code{qbm()}. They simply forward to the corresponding
 \code{qbm} functions.
 }
+\details{
+The model fitting process includes:
+\enumerate{
+\item Cross-validation to determine the optimal number of boosting iterations
+\item Retraining on the full dataset using the optimal iterations
+\item Computation of comprehensive metrics and diagnostics
+\item Feature importance calculation
+}
+
+Default LightGBM parameters are optimized for quantile regression:
+\itemize{
+\item \code{objective = "quantile"}
+\item \code{alpha = tau} (quantile level)
+\item \code{metric = "quantile"}
+\item \code{num_leaves = 200}
+\item \code{max_depth = 14}
+}
+}
 \examples{
 \dontrun{
+# Formula interface
 set.seed(1)
 df <- data.frame(
   x1 = rnorm(200),
-  x2 = rnorm(200)
+  x2 = rnorm(200),
+  x3 = rnorm(200)
 )
-df$y <- df$x1 * 0.5 + rnorm(200)
-fit <- qbm(y ~ x1 + x2, data = df, tau = 0.3, nrounds = 50, nfolds = 3)
-predict(fit, head(df[, c("x1", "x2")]))
+df$y <- df$x1 * 0.5 + df$x2 * 0.3 + rnorm(200)
+
+# Fit median regression (tau = 0.5)
+fit_median <- qbm(y ~ x1 + x2 + x3, data = df, tau = 0.5, nrounds = 100)
+print(fit_median)
+summary(fit_median)
+
+# Fit upper quantile (tau = 0.9)
+fit_upper <- qbm(y ~ x1 + x2 + x3, data = df, tau = 0.9, nrounds = 100)
+
+# Predictions
+newdata <- data.frame(x1 = c(0, 1), x2 = c(0, 1), x3 = c(0, 1))
+predict(fit_median, newdata)
+predict(fit_upper, newdata)
+
+# Matrix interface
+X <- as.matrix(df[, c("x1", "x2", "x3")])
+y <- df$y
+fit_matrix <- qbm(x = X, y = y, tau = 0.5, nrounds = 100)
+
+# Custom hyperparameters
+fit_custom <- qbm(
+  y ~ x1 + x2 + x3,
+  data = df,
+  tau = 0.75,
+  params = list(
+    learning_rate = 0.05,
+    num_leaves = 100,
+    max_depth = 10
+  )
+)
 }
+}
+\seealso{
+\code{\link{predict.qbm}}, \code{\link{summary.qbm}}, \code{\link{plot.qbm}},
+\code{\link{residuals.qbm}}, \code{\link{fitted.qbm}}, \code{\link{coef.qbm}}
 }
