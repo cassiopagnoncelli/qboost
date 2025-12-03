@@ -169,51 +169,51 @@ qbm <- function(
     seed = seed
   )
 
-  # For train/val split, use validation monitoring instead of CV
+  # Determine CV data subset based on indices
   if (fold_spec$type == "train_val_split") {
-    # Create separate train and validation datasets
-    dtrain <- lightgbm::lgb.Dataset(
+    # Use k-fold CV on combined train+val data
+    cv_indices <- c(fold_spec$train_idx, fold_spec$val_idx)
+    dtrain_cv <- lightgbm::lgb.Dataset(
+      data = x[cv_indices, , drop = FALSE],
+      label = y[cv_indices]
+    )
+  } else if (!is.null(fold_spec$train_idx)) {
+    # Only train_idx provided (no val_idx) - use train_idx for CV
+    dtrain_cv <- lightgbm::lgb.Dataset(
       data = x[fold_spec$train_idx, , drop = FALSE],
       label = y[fold_spec$train_idx]
     )
-    
-    dval <- lightgbm::lgb.Dataset(
-      data = x[fold_spec$val_idx, , drop = FALSE],
-      label = y[fold_spec$val_idx],
-      reference = dtrain
-    )
-    
-    # Train with validation monitoring
+  } else {
+    # No indices specified - use full data
+    dtrain_cv <- lightgbm::lgb.Dataset(data = x, label = y)
+  }
+  
+  # Perform k-fold cross-validation
+  if (fold_spec$type == "train_val_split" || fold_spec$type == "auto_kfold") {
+    # Standard k-fold CV
     set.seed(seed)
-    train_args <- .merge_lgb_args(
+    cv_args <- .merge_lgb_args(
       list(
         params = params_full,
-        data = dtrain,
+        data = dtrain_cv,
         nrounds = nrounds,
-        valids = list(val = dval),
+        nfold = nfolds,
         early_stopping_rounds = early_stopping_rounds,
         verbose = -1
       ),
       extra_args
     )
-    final_model <- do.call(lightgbm::lgb.train, train_args)
-    
-    best_iter <- if (!is.null(final_model$best_iter)) final_model$best_iter else nrounds
-    
-    # Create a mock cv object for consistency
-    cv <- list(best_iter = best_iter)
-    
+    cv <- do.call(lightgbm::lgb.cv, cv_args)
   } else {
-    # Use cross-validation for custom folds or auto k-fold
-    dtrain <- lightgbm::lgb.Dataset(data = x, label = y)
-
+    # Custom folds
+    dtrain_cv <- lightgbm::lgb.Dataset(data = x, label = y)
+    
     set.seed(seed)
     cv_args <- .merge_lgb_args(
       list(
         params = params_full,
-        data = dtrain,
+        data = dtrain_cv,
         nrounds = nrounds,
-        nfold = if (is.null(fold_spec$folds)) nfolds else NULL,
         folds = fold_spec$folds,
         early_stopping_rounds = early_stopping_rounds,
         verbose = -1
@@ -221,40 +221,78 @@ qbm <- function(
       extra_args
     )
     cv <- do.call(lightgbm::lgb.cv, cv_args)
-
-    best_iter <- if (!is.null(cv$best_iter)) cv$best_iter else nrounds
-
-    # Train final model on full data
-    set.seed(seed)
-    train_args <- .merge_lgb_args(
-      list(
-        params = params_full,
-        data = dtrain,
-        nrounds = best_iter,
-        verbose = -1
-      ),
-      extra_args
-    )
-    final_model <- do.call(lightgbm::lgb.train, train_args)
   }
 
-  # Get fitted values for the appropriate subset
+  best_iter <- if (!is.null(cv$best_iter)) cv$best_iter else nrounds
+
+  # Train final model
   if (fold_spec$use_subset) {
-    fitted <- numeric(nrow(x))
-    fitted[fold_spec$train_idx] <- .lgb_predict(final_model, x[fold_spec$train_idx, , drop = FALSE])
-    fitted[fold_spec$val_idx] <- NA_real_
+    # Train on train_idx only
+    dtrain_final <- lightgbm::lgb.Dataset(
+      data = x[fold_spec$train_idx, , drop = FALSE],
+      label = y[fold_spec$train_idx]
+    )
   } else {
-    fitted <- .lgb_predict(final_model, x)
+    # Train on full data
+    dtrain_final <- dtrain_cv
   }
 
-  train_metrics <- compute_qbm_metrics(
-    y = y,
-    yhat = fitted,
-    tau = tau,
-    cv_result = cv,
-    model = final_model,
-    best_iter = best_iter
+  set.seed(seed)
+  train_args <- .merge_lgb_args(
+    list(
+      params = params_full,
+      data = dtrain_final,
+      nrounds = best_iter,
+      verbose = -1
+    ),
+    extra_args
   )
+  final_model <- do.call(lightgbm::lgb.train, train_args)
+
+  # Get fitted values and compute metrics
+  if (fold_spec$use_subset) {
+    # Separate train and validation predictions
+    fitted_train <- .lgb_predict(final_model, x[fold_spec$train_idx, , drop = FALSE])
+    fitted_val <- .lgb_predict(final_model, x[fold_spec$val_idx, , drop = FALSE])
+    
+    # Create full fitted vector (val indices are NA for compatibility)
+    fitted <- numeric(nrow(x))
+    fitted[fold_spec$train_idx] <- fitted_train
+    fitted[fold_spec$val_idx] <- NA_real_
+    
+    # Compute separate metrics for train and validation
+    train_metrics <- compute_qbm_metrics(
+      y = y[fold_spec$train_idx],
+      yhat = fitted_train,
+      tau = tau,
+      cv_result = cv,
+      model = final_model,
+      best_iter = best_iter
+    )
+    
+    val_metrics <- compute_qbm_metrics(
+      y = y[fold_spec$val_idx],
+      yhat = fitted_val,
+      tau = tau,
+      cv_result = NULL,
+      model = NULL,
+      best_iter = NULL
+    )
+  } else {
+    # No train/val split - compute on full data
+    fitted <- .lgb_predict(final_model, x)
+    
+    train_metrics <- compute_qbm_metrics(
+      y = y,
+      yhat = fitted,
+      tau = tau,
+      cv_result = cv,
+      model = final_model,
+      best_iter = best_iter
+    )
+    
+    val_metrics <- NULL
+  }
 
   importance_df <- tidy_importance(final_model)
 
@@ -270,6 +308,7 @@ qbm <- function(
     complexity = train_metrics$complexity,
     importance = importance_df,
     residuals = train_metrics$residuals,
+    validation = val_metrics,
     timings = list(
       start = start_time,
       end = end_time,
@@ -277,7 +316,9 @@ qbm <- function(
     ),
     data_info = list(
       n = nrow(x),
-      p = ncol(x)
+      p = ncol(x),
+      n_train = if (fold_spec$use_subset) length(fold_spec$train_idx) else nrow(x),
+      n_val = if (fold_spec$use_subset) length(fold_spec$val_idx) else 0L
     ),
     cv_settings = list(
       nrounds = nrounds,
@@ -455,13 +496,13 @@ qbm <- function(
   }
   
   # Priority 3: Automatic k-fold (default)
-  return(list(
+  list(
     type = "auto_kfold",
     folds = NULL,
     use_subset = FALSE,
     train_idx = NULL,
     val_idx = NULL
-  ))
+  )
 }
 
 .merge_lgb_args <- function(base_args, extra_args) {

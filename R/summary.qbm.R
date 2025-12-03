@@ -68,6 +68,7 @@ summary.qbm <- function(object, detailed = TRUE, newdata = NULL, y_new = NULL, t
     complexity = object$complexity,
     residuals = object$residuals,
     importance = importance.qbm(object),
+    validation = object$validation,
     data_info = object$data_info,
     timings = object$timings,
     cv_settings = object$cv_settings,
@@ -115,10 +116,30 @@ print.qbm_summary <- function(x, ...) {
     }
     cat("\n")
 
-    cat("Training metrics\n")
+    cat("Training metrics")
+    if (!is.null(x$data_info$n_train)) {
+      cat(" (n=", x$data_info$n_train, ")", sep = "")
+    }
+    cat("\n")
     cat(" Pinball loss:     ", format(x$metrics$pinball_loss, digits = 4), "\n", sep = "")
     cat(" MAE:              ", format(x$metrics$mae, digits = 4), "\n", sep = "")
-    cat(" Pseudo-R2:        ", format(x$metrics$pseudo_r2, digits = 4), "\n\n", sep = "")
+    cat(" Pseudo-R2:        ", format(x$metrics$pseudo_r2, digits = 4), "\n", sep = "")
+    cat(" Coverage:         ", format(x$calibration$coverage, digits = 4), "\n", sep = "")
+    cat(" QCE:              ", format(x$calibration$qce, digits = 4), "\n", sep = "")
+    
+    if (!is.null(x$validation)) {
+      cat("\nValidation metrics")
+      if (!is.null(x$data_info$n_val) && x$data_info$n_val > 0) {
+        cat(" (n=", x$data_info$n_val, ")", sep = "")
+      }
+      cat("\n")
+      cat(" Pinball loss:     ", format(x$validation$metrics$pinball_loss, digits = 4), "\n", sep = "")
+      cat(" MAE:              ", format(x$validation$metrics$mae, digits = 4), "\n", sep = "")
+      cat(" Pseudo-R2:        ", format(x$validation$metrics$pseudo_r2, digits = 4), "\n", sep = "")
+      cat(" Coverage:         ", format(x$validation$calibration$coverage, digits = 4), "\n", sep = "")
+      cat(" QCE:              ", format(x$validation$calibration$qce, digits = 4), "\n", sep = "")
+    }
+    cat("\n")
 
     cat("Cross-validation\n")
     cat(" Best iteration:   ", x$metrics$best_iter_cv, "\n", sep = "")

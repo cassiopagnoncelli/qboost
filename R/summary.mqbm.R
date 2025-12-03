@@ -1,7 +1,7 @@
 #' Aggregate metrics across group-specific models
 #'
 #' @param mqbm_object A fitted mqbm model
-#' @return List with aggregated metrics
+#' @return List with aggregated metrics for training and validation
 #' @keywords internal
 .aggregate_symbol_metrics <- function(mqbm_object) {
   # Get fitted values and residuals for all symbols
@@ -9,27 +9,91 @@
   fitted_vals <- fitted(mqbm_object, type = "surface")
   y_all <- mqbm_object$training$y
   
-  # Compute overall metrics
-  pinball <- pinball_loss_mean(y_all, fitted_vals, mqbm_object$tau)
-  mae_val <- mae(y_all, fitted_vals)
-  pseudo_r2 <- quantile_pseudo_r2(y_all, fitted_vals, mqbm_object$tau)
+  # Check if any model has validation metrics
+  has_validation <- any(sapply(mqbm_object$models, function(m) !is.null(m$validation)))
   
-  # Get per-symbol metrics for weighted aggregation
+  # Compute overall training metrics (excluding NA values from validation set)
+  valid_idx <- !is.na(fitted_vals)
+  pinball <- pinball_loss_mean(y_all[valid_idx], fitted_vals[valid_idx], mqbm_object$tau)
+  mae_val <- mae(y_all[valid_idx], fitted_vals[valid_idx])
+  pseudo_r2 <- quantile_pseudo_r2(y_all[valid_idx], fitted_vals[valid_idx], mqbm_object$tau)
+  
+  # Get per-symbol training metrics
   symbol_metrics <- lapply(mqbm_object$symbols, function(sym) {
-    idx <- mqbm_object$symbol_info[[sym]]$indices
-    y_sym <- y_all[idx]
-    fitted_sym <- fitted_vals[idx]
+    model <- mqbm_object$models[[sym]]
     
     list(
-      n = length(idx),
-      pinball = pinball_loss_mean(y_sym, fitted_sym, mqbm_object$tau),
-      mae = mae(y_sym, fitted_sym),
-      pseudo_r2 = quantile_pseudo_r2(y_sym, fitted_sym, mqbm_object$tau),
-      coverage = mean(y_sym <= fitted_sym, na.rm = TRUE),
-      qce = abs(mean(y_sym <= fitted_sym, na.rm = TRUE) - mqbm_object$tau)
+      n = mqbm_object$symbol_info[[sym]]$n,
+      n_train = if (!is.null(model$data_info$n_train)) model$data_info$n_train else model$data_info$n,
+      n_val = if (!is.null(model$data_info$n_val)) model$data_info$n_val else 0L,
+      pinball = model$metrics$pinball_loss,
+      mae = model$metrics$mae,
+      pseudo_r2 = model$metrics$pseudo_r2,
+      coverage = model$calibration$coverage,
+      qce = model$calibration$qce
     )
   })
   names(symbol_metrics) <- mqbm_object$symbols
+  
+  # Aggregate validation metrics if available
+  val_overall <- NULL
+  val_per_symbol <- NULL
+  
+  if (has_validation) {
+    val_per_symbol <- lapply(mqbm_object$symbols, function(sym) {
+      model <- mqbm_object$models[[sym]]
+      if (!is.null(model$validation)) {
+        list(
+          n_val = model$data_info$n_val,
+          pinball = model$validation$metrics$pinball_loss,
+          mae = model$validation$metrics$mae,
+          pseudo_r2 = model$validation$metrics$pseudo_r2,
+          coverage = model$validation$calibration$coverage,
+          qce = model$validation$calibration$qce
+        )
+      } else {
+        NULL
+      }
+    })
+    names(val_per_symbol) <- mqbm_object$symbols
+    
+    # Remove NULLs (symbols without validation)
+    val_per_symbol <- val_per_symbol[!sapply(val_per_symbol, is.null)]
+    
+    # Compute weighted aggregate validation metrics
+    if (length(val_per_symbol) > 0) {
+      val_n <- sum(sapply(val_per_symbol, function(x) x$n_val))
+      val_pinball <- weighted.mean(
+        sapply(val_per_symbol, function(x) x$pinball),
+        sapply(val_per_symbol, function(x) x$n_val)
+      )
+      val_mae <- weighted.mean(
+        sapply(val_per_symbol, function(x) x$mae),
+        sapply(val_per_symbol, function(x) x$n_val)
+      )
+      val_pseudo_r2 <- weighted.mean(
+        sapply(val_per_symbol, function(x) x$pseudo_r2),
+        sapply(val_per_symbol, function(x) x$n_val)
+      )
+      val_coverage <- weighted.mean(
+        sapply(val_per_symbol, function(x) x$coverage),
+        sapply(val_per_symbol, function(x) x$n_val)
+      )
+      val_qce <- weighted.mean(
+        sapply(val_per_symbol, function(x) x$qce),
+        sapply(val_per_symbol, function(x) x$n_val)
+      )
+      
+      val_overall <- list(
+        n = val_n,
+        pinball_loss = val_pinball,
+        mae = val_mae,
+        pseudo_r2 = val_pseudo_r2,
+        coverage = val_coverage,
+        qce = val_qce
+      )
+    }
+  }
   
   list(
     overall = list(
@@ -37,7 +101,9 @@
       mae = mae_val,
       pseudo_r2 = pseudo_r2
     ),
-    per_symbol = symbol_metrics
+    per_symbol = symbol_metrics,
+    validation_overall = val_overall,
+    validation_per_symbol = val_per_symbol
   )
 }
 
@@ -86,24 +152,40 @@
 #' @param mqbm_object A fitted mqbm model
 #' @param metrics_list Output from .aggregate_symbol_metrics
 #' @param calibration_list Output from .aggregate_calibration
-#' @return Tibble with per-symbol summary
+#' @return Tibble with per-symbol summary (includes validation if available)
 #' @keywords internal
 .compute_symbol_table <- function(mqbm_object, metrics_list, calibration_list) {
+  # Check if validation metrics are available
+  has_validation <- !is.null(metrics_list$validation_per_symbol) && 
+                    length(metrics_list$validation_per_symbol) > 0
+  
   symbol_rows <- lapply(mqbm_object$symbols, function(sym) {
     m <- metrics_list$per_symbol[[sym]]
     c <- calibration_list$per_symbol[[sym]]
     trees <- mqbm_object$models[[sym]]$best_iter
     
-    tibble::tibble(
+    base_cols <- tibble::tibble(
       symbol = sym,
       n = m$n,
       trees = trees,
-      pinball = m$pinball,
-      mae = m$mae,
-      pseudo_r2 = m$pseudo_r2,
-      coverage = c$coverage,
-      qce = c$qce
+      train_pinball = m$pinball,
+      train_mae = m$mae,
+      train_r2 = m$pseudo_r2,
+      train_cov = c$coverage,
+      train_qce = c$qce
     )
+    
+    # Add validation columns if available for this symbol
+    if (has_validation && !is.null(metrics_list$validation_per_symbol[[sym]])) {
+      val <- metrics_list$validation_per_symbol[[sym]]
+      base_cols$val_pinball <- val$pinball
+      base_cols$val_mae <- val$mae
+      base_cols$val_r2 <- val$pseudo_r2
+      base_cols$val_cov <- val$coverage
+      base_cols$val_qce <- val$qce
+    }
+    
+    base_cols
   })
   
   dplyr::bind_rows(symbol_rows)
@@ -254,7 +336,19 @@ print.mqbm_summary <- function(x, ...) {
     cat("Aggregate Training Metrics\n")
     cat(" Pinball loss:     ", format(x$metrics$overall$pinball_loss, digits = 4), "\n", sep = "")
     cat(" MAE:              ", format(x$metrics$overall$mae, digits = 4), "\n", sep = "")
-    cat(" Pseudo-R2:        ", format(x$metrics$overall$pseudo_r2, digits = 4), "\n\n", sep = "")
+    cat(" Pseudo-R2:        ", format(x$metrics$overall$pseudo_r2, digits = 4), "\n", sep = "")
+    
+    if (!is.null(x$metrics$validation_overall)) {
+      cat("\nAggregate Validation Metrics")
+      cat(" (n=", x$metrics$validation_overall$n, ")", sep = "")
+      cat("\n")
+      cat(" Pinball loss:     ", format(x$metrics$validation_overall$pinball_loss, digits = 4), "\n", sep = "")
+      cat(" MAE:              ", format(x$metrics$validation_overall$mae, digits = 4), "\n", sep = "")
+      cat(" Pseudo-R2:        ", format(x$metrics$validation_overall$pseudo_r2, digits = 4), "\n", sep = "")
+      cat(" Coverage:         ", format(x$metrics$validation_overall$coverage, digits = 4), "\n", sep = "")
+      cat(" QCE:              ", format(x$metrics$validation_overall$qce, digits = 4), "\n", sep = "")
+    }
+    cat("\n")
     
     cat("Aggregate Calibration\n")
     cat(" Coverage:         ", format(x$calibration$overall_coverage, digits = 4), 

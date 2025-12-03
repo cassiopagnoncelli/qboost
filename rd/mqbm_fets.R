@@ -2,13 +2,15 @@ devtools::load_all()
 
 library("fets")
 library("qetl")
+library("dtools")
 
 quotes <- qetl::get_sample_quotes()
-quotes <- quotes[symbol %in% unique(quotes$symbol)[seq_len(10)]]
+quotes <- quotes[symbol %in% sample(unique(quotes$symbol), 60)]
 
 fets::fwd(quotes, lookahead = 15, inplace = TRUE)
 
 macro <- fets::macro()
+macro <- macro[, .SD, .SDcols = c("date", "vix", "dxy", "small_caps", "recession_prob_R_vel_0")]
 fets::add_macro(quotes, macro)
 
 sentiments <- qetl::sentiments()
@@ -55,12 +57,13 @@ qXY
 cat("Training mqbm model...\n")
 fit <- mqbm(
   y ~ .,
-  data = qXY[train_idx, ],
   multi = "symbol",
-  tau = 0.98,
-  nrounds = 400,
-  early_stopping_rounds = 20,
-  nfolds = 3
+  data = qXY,
+  train_idx = train_idx,
+  val_idx = val_idx,
+  tau = 0.95,
+  nrounds = 600,
+  early_stopping_rounds = 10
 )
 
 # Fit model
@@ -68,85 +71,13 @@ print(fit)
 
 summary(fit)
 
-# Use predict, fitted, etc
+# Assessing
+yhat <- predict(fit, qXY[stages_idx, ], type = "quantile")
 
-# ------------------------------------------------------------------
-# Predictions
-# ------------------------------------------------------------------
-cat("\n\nMaking predictions...\n")
+res <- tibble::tibble(yhat, qXY)
 
-# Method 1: symbol column in newdata
-preds1 <- predict(fit, test_df)
-
-# Method 2: separate symbol argument
-preds2 <- predict(fit, test_df[, c("x1", "x2")], symbol = test_df$symbol)
-
-cat("Predictions match:", all(preds1 == preds2), "\n")
-
-# ------------------------------------------------------------------
-# Fitted values
-# ------------------------------------------------------------------
-cat("\nFitted values on training data:\n")
-fitted_vals <- fitted(fit)
-cat("Length:", length(fitted_vals), "\n")
-cat("Range:", range(fitted_vals), "\n")
-
-# ------------------------------------------------------------------
-# Model per symbol
-# ------------------------------------------------------------------
-cat("\nIndividual models per symbol:\n")
-for (sym in fit$symbols) {
-  model <- fit$models[[sym]]
-  cat(sprintf("  %s: %d trees, %d observations\n",
-              sym, model$best_iter, fit$symbol_info[[sym]]$n))
-}
-
-# ------------------------------------------------------------------
-# Compare predictions across symbols
-# ------------------------------------------------------------------
-cat("\nPrediction comparison:\n")
-for (sym in fit$symbols) {
-  sym_idx <- which(test_df$symbol == sym)
-  if (length(sym_idx) > 0) {
-    sym_preds <- preds1[sym_idx]
-    cat(sprintf("  %s: mean=%.3f, sd=%.3f, n=%d\n",
-                sym, mean(sym_preds), sd(sym_preds), length(sym_idx)))
-  }
-}
-
-# ------------------------------------------------------------------
-# Custom multi parameter example
-# ------------------------------------------------------------------
-cat("\n\nCustom multi parameter example:\n")
-
-# Create data with a different grouping column
-df2 <- data.frame(
-  x1 = rnorm(200),
-  x2 = rnorm(200),
-  group = sample(c("GroupA", "GroupB", "GroupC"), 200, replace = TRUE)
-)
-df2$y <- df2$x1 * 0.5 + rnorm(200)
-
-# Train with custom multi parameter
-fit2 <- mqbm(
-  y ~ x1 + x2,
-  data = df2,
-  multi = "group",  # Use "group" instead of default "symbol"
-  tau = 0.5,
-  nrounds = 50,
-  nfolds = 3
-)
-
-cat("Multi parameter used:", fit2$multi, "\n")
-cat("Groups:", paste(fit2$symbols, collapse = ", "), "\n")
-
-# Predictions work with the group column
-newdata <- data.frame(
-  x1 = rnorm(50),
-  x2 = rnorm(50),
-  group = sample(c("GroupA", "GroupB", "GroupC"), 50, replace = TRUE)
-)
-preds_custom <- predict(fit2, newdata)
-cat("Custom predictions generated:", length(preds_custom), "\n")
-
-cat("\nDemo complete!\n")
+q <- res$yhat[c(train_idx, val_idx)] %>% quantile(0.999)
+res[test_idx, ] %>%
+  dplyr::filter(yhat > q) %>%
+  dplyr::pull(y) %>%
+  analyse(groups = 1)

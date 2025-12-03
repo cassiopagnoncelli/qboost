@@ -390,8 +390,8 @@ test_that("summary.mqbm returns correct structure", {
   # Check symbol table
   expect_s3_class(summ$symbol_table, "tbl_df")
   expect_equal(nrow(summ$symbol_table), 3)
-  expect_true(all(c("symbol", "n", "trees", "pinball", "mae", "pseudo_r2", 
-                    "coverage", "qce") %in% names(summ$symbol_table)))
+  expect_true(all(c("symbol", "n", "trees", "train_pinball", "train_mae", "train_r2", 
+                    "train_cov", "train_qce") %in% names(summ$symbol_table)))
 })
 
 test_that("summary.mqbm computes aggregate metrics correctly", {
