@@ -23,6 +23,14 @@
 #'   before stopping. Default is 50.
 #' @param seed Random seed for reproducibility of cross-validation splits and
 #'   model training. Default is 1.
+#' @param train_idx Optional integer vector of training indices for single train/val split.
+#'   If provided with \code{val_idx}, performs single holdout validation instead of k-fold CV.
+#'   Ignored if \code{folds} is specified.
+#' @param val_idx Optional integer vector of validation indices for single train/val split.
+#'   Must be provided together with \code{train_idx}. Ignored if \code{folds} is specified.
+#' @param folds Optional list of integer vectors specifying custom fold structure for CV.
+#'   Each element should contain validation indices for that fold. Takes priority over
+#'   \code{train_idx}/\code{val_idx} and automatic k-fold generation.
 #'
 #' @return An object of class \code{qbm} containing:
 #'   \item{model}{The fitted LightGBM model object}
@@ -111,7 +119,10 @@ qbm <- function(
     nfolds = 5,
     params = list(),
     early_stopping_rounds = 50,
-    seed = 1) {
+    seed = 1,
+    train_idx = NULL,
+    val_idx = NULL,
+    folds = NULL) {
   start_time <- Sys.time()
 
   dots <- list(...)
@@ -148,37 +159,93 @@ qbm <- function(
   )
   params_full <- utils::modifyList(params_default, params)
 
-  dtrain <- lightgbm::lgb.Dataset(data = x, label = y)
-
-  set.seed(seed)
-  cv_args <- .merge_lgb_args(
-    list(
-      params = params_full,
-      data = dtrain,
-      nrounds = nrounds,
-      nfold = nfolds,
-      early_stopping_rounds = early_stopping_rounds,
-      verbose = -1
-    ),
-    extra_args
+  # Validate and prepare fold specification
+  fold_spec <- .prepare_fold_specification(
+    n = nrow(x),
+    folds = folds,
+    train_idx = train_idx,
+    val_idx = val_idx,
+    nfolds = nfolds,
+    seed = seed
   )
-  cv <- do.call(lightgbm::lgb.cv, cv_args)
 
-  best_iter <- if (!is.null(cv$best_iter)) cv$best_iter else nrounds
+  # For train/val split, use validation monitoring instead of CV
+  if (fold_spec$type == "train_val_split") {
+    # Create separate train and validation datasets
+    dtrain <- lightgbm::lgb.Dataset(
+      data = x[fold_spec$train_idx, , drop = FALSE],
+      label = y[fold_spec$train_idx]
+    )
+    
+    dval <- lightgbm::lgb.Dataset(
+      data = x[fold_spec$val_idx, , drop = FALSE],
+      label = y[fold_spec$val_idx],
+      reference = dtrain
+    )
+    
+    # Train with validation monitoring
+    set.seed(seed)
+    train_args <- .merge_lgb_args(
+      list(
+        params = params_full,
+        data = dtrain,
+        nrounds = nrounds,
+        valids = list(val = dval),
+        early_stopping_rounds = early_stopping_rounds,
+        verbose = -1
+      ),
+      extra_args
+    )
+    final_model <- do.call(lightgbm::lgb.train, train_args)
+    
+    best_iter <- if (!is.null(final_model$best_iter)) final_model$best_iter else nrounds
+    
+    # Create a mock cv object for consistency
+    cv <- list(best_iter = best_iter)
+    
+  } else {
+    # Use cross-validation for custom folds or auto k-fold
+    dtrain <- lightgbm::lgb.Dataset(data = x, label = y)
 
-  set.seed(seed)
-  train_args <- .merge_lgb_args(
-    list(
-      params = params_full,
-      data = dtrain,
-      nrounds = best_iter,
-      verbose = -1
-    ),
-    extra_args
-  )
-  final_model <- do.call(lightgbm::lgb.train, train_args)
+    set.seed(seed)
+    cv_args <- .merge_lgb_args(
+      list(
+        params = params_full,
+        data = dtrain,
+        nrounds = nrounds,
+        nfold = if (is.null(fold_spec$folds)) nfolds else NULL,
+        folds = fold_spec$folds,
+        early_stopping_rounds = early_stopping_rounds,
+        verbose = -1
+      ),
+      extra_args
+    )
+    cv <- do.call(lightgbm::lgb.cv, cv_args)
 
-  fitted <- .lgb_predict(final_model, x)
+    best_iter <- if (!is.null(cv$best_iter)) cv$best_iter else nrounds
+
+    # Train final model on full data
+    set.seed(seed)
+    train_args <- .merge_lgb_args(
+      list(
+        params = params_full,
+        data = dtrain,
+        nrounds = best_iter,
+        verbose = -1
+      ),
+      extra_args
+    )
+    final_model <- do.call(lightgbm::lgb.train, train_args)
+  }
+
+  # Get fitted values for the appropriate subset
+  if (fold_spec$use_subset) {
+    fitted <- numeric(nrow(x))
+    fitted[fold_spec$train_idx] <- .lgb_predict(final_model, x[fold_spec$train_idx, , drop = FALSE])
+    fitted[fold_spec$val_idx] <- NA_real_
+  } else {
+    fitted <- .lgb_predict(final_model, x)
+  }
 
   train_metrics <- compute_qbm_metrics(
     y = y,
@@ -215,7 +282,10 @@ qbm <- function(
     cv_settings = list(
       nrounds = nrounds,
       nfolds = nfolds,
-      early_stopping_rounds = early_stopping_rounds
+      early_stopping_rounds = early_stopping_rounds,
+      fold_type = fold_spec$type,
+      train_idx = if (fold_spec$use_subset) fold_spec$train_idx else NULL,
+      val_idx = if (fold_spec$use_subset) fold_spec$val_idx else NULL
     ),
     preprocess = parsed$preprocess,
     params_used = params_full,
@@ -311,6 +381,87 @@ qbm <- function(
     extra_args = extra_args,
     preprocess = preprocess
   )
+}
+
+#' Prepare fold specification for cross-validation
+#'
+#' @param n Number of observations
+#' @param folds Optional list of validation indices
+#' @param train_idx Optional training indices
+#' @param val_idx Optional validation indices
+#' @param nfolds Number of folds for automatic k-fold
+#' @param seed Random seed
+#' @return List with fold specification details
+#' @keywords internal
+.prepare_fold_specification <- function(n, folds, train_idx, val_idx, nfolds, seed) {
+  # Priority 1: Custom folds
+  if (!is.null(folds)) {
+    if (!is.list(folds)) {
+      stop("`folds` must be a list of integer vectors.", call. = FALSE)
+    }
+    if (length(folds) == 0) {
+      stop("`folds` must contain at least one fold.", call. = FALSE)
+    }
+    # Validate each fold
+    for (i in seq_along(folds)) {
+      fold_idx <- folds[[i]]
+      if (!is.numeric(fold_idx) && !is.integer(fold_idx)) {
+        stop(sprintf("`folds[[%d]]` must be an integer vector.", i), call. = FALSE)
+      }
+      if (any(fold_idx < 1 | fold_idx > n)) {
+        stop(sprintf("`folds[[%d]]` contains invalid indices.", i), call. = FALSE)
+      }
+    }
+    return(list(
+      type = "custom_folds",
+      folds = folds,
+      use_subset = FALSE,
+      train_idx = NULL,
+      val_idx = NULL
+    ))
+  }
+  
+  # Priority 2: Train/val split
+  if (!is.null(train_idx) || !is.null(val_idx)) {
+    if (is.null(train_idx) || is.null(val_idx)) {
+      stop("`train_idx` and `val_idx` must both be provided for train/val split.", call. = FALSE)
+    }
+    if (!is.numeric(train_idx) && !is.integer(train_idx)) {
+      stop("`train_idx` must be an integer vector.", call. = FALSE)
+    }
+    if (!is.numeric(val_idx) && !is.integer(val_idx)) {
+      stop("`val_idx` must be an integer vector.", call. = FALSE)
+    }
+    if (any(train_idx < 1 | train_idx > n)) {
+      stop("`train_idx` contains invalid indices.", call. = FALSE)
+    }
+    if (any(val_idx < 1 | val_idx > n)) {
+      stop("`val_idx` contains invalid indices.", call. = FALSE)
+    }
+    if (any(train_idx %in% val_idx)) {
+      stop("`train_idx` and `val_idx` must not overlap.", call. = FALSE)
+    }
+    
+    # Create single fold for LightGBM
+    folds_list <- list(val_idx)
+    
+    return(list(
+      type = "train_val_split",
+      folds = folds_list,
+      use_subset = TRUE,
+      train_idx = train_idx,
+      val_idx = val_idx
+    ))
+  }
+  
+  # Priority 3: Automatic k-fold (default)
+  return(list(
+    type = "auto_kfold",
+    folds = NULL,
+    use_subset = FALSE,
+    train_idx = NULL,
+    val_idx = NULL
+  ))
 }
 
 .merge_lgb_args <- function(base_args, extra_args) {

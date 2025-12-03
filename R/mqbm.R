@@ -19,6 +19,15 @@
 #'   symbol-specific models. See \code{\link{qbm}} for available parameters.
 #' @param early_stopping_rounds Early stopping patience for each symbol model. Default is 50.
 #' @param seed Random seed for reproducibility across all symbol models. Default is 1.
+#' @param train_idx Optional integer vector of training indices (referring to full dataset rows).
+#'   If provided with \code{val_idx}, performs single holdout validation for each symbol.
+#'   Indices are automatically subset per symbol respecting symbol boundaries.
+#'   Ignored if \code{folds} is specified.
+#' @param val_idx Optional integer vector of validation indices (referring to full dataset rows).
+#'   Must be provided together with \code{train_idx}. Ignored if \code{folds} is specified.
+#' @param folds Optional list of integer vectors specifying custom fold structure for CV
+#'   (referring to full dataset rows). Each element should contain validation indices for that fold.
+#'   Takes priority over \code{train_idx}/\code{val_idx}. Indices are automatically subset per symbol.
 #'
 #' @return An object of class \code{mqbm} containing:
 #'   \item{models}{Named list of fitted \code{\link{qbm}} objects, one per symbol}
@@ -100,7 +109,10 @@ mqbm <- function(
     nfolds = 5,
     params = list(),
     early_stopping_rounds = 50,
-    seed = 1) {
+    seed = 1,
+    train_idx = NULL,
+    val_idx = NULL,
+    folds = NULL) {
   start_time <- Sys.time()
 
   dots <- list(...)
@@ -140,7 +152,15 @@ mqbm <- function(
     # Build ECDF for this symbol's training y values
     ecdf_funs[[sym]] <- stats::ecdf(y_sym)
     
-    # Train qbm for this symbol
+    # Subset and remap train/val indices for this symbol
+    symbol_indices <- .subset_indices_for_symbol(
+      global_idx = idx,
+      train_idx = train_idx,
+      val_idx = val_idx,
+      folds = folds
+    )
+    
+    # Train qbm for this symbol with symbol-specific indices
     if (parsed$preprocess$type == "formula") {
       # For formula interface, we need to reconstruct the call
       # We'll use the x/y interface for qbm since we've already processed the formula
@@ -152,7 +172,10 @@ mqbm <- function(
         nfolds = nfolds,
         params = params,
         early_stopping_rounds = early_stopping_rounds,
-        seed = seed
+        seed = seed,
+        train_idx = symbol_indices$train_idx,
+        val_idx = symbol_indices$val_idx,
+        folds = symbol_indices$folds
       )
     } else {
       # Direct x/y interface
@@ -164,7 +187,10 @@ mqbm <- function(
         nfolds = nfolds,
         params = params,
         early_stopping_rounds = early_stopping_rounds,
-        seed = seed
+        seed = seed,
+        train_idx = symbol_indices$train_idx,
+        val_idx = symbol_indices$val_idx,
+        folds = symbol_indices$folds
       )
     }
   }
@@ -319,4 +345,75 @@ mqbm <- function(
     extra_args = extra_args,
     preprocess = preprocess
   )
+}
+
+#' Subset and remap global indices for a specific symbol
+#'
+#' Takes global dataset indices and remaps them to symbol-specific local indices,
+#' respecting symbol boundaries (never mixing observations between symbols).
+#'
+#' @param global_idx Integer vector of row indices for this symbol in the full dataset
+#' @param train_idx Optional global training indices
+#' @param val_idx Optional global validation indices
+#' @param folds Optional list of global fold validation indices
+#' @return List with symbol-specific train_idx, val_idx, and folds (or NULL)
+#' @keywords internal
+.subset_indices_for_symbol <- function(global_idx, train_idx, val_idx, folds) {
+  # If no custom indices specified, return NULLs (use default k-fold)
+  if (is.null(train_idx) && is.null(val_idx) && is.null(folds)) {
+    return(list(train_idx = NULL, val_idx = NULL, folds = NULL))
+  }
+  
+  # Priority 1: Custom folds
+  if (!is.null(folds)) {
+    symbol_folds <- lapply(folds, function(fold_val_idx) {
+      # Find which validation indices belong to this symbol
+      symbol_val_global <- intersect(fold_val_idx, global_idx)
+      if (length(symbol_val_global) == 0) {
+        return(integer(0))
+      }
+      # Remap global indices to local symbol-specific indices
+      match(symbol_val_global, global_idx)
+    })
+    # Remove empty folds (where this symbol has no validation observations)
+    symbol_folds <- symbol_folds[sapply(symbol_folds, length) > 0]
+    
+    if (length(symbol_folds) == 0) {
+      # This symbol has no observations in any validation fold
+      # Fall back to default k-fold
+      return(list(train_idx = NULL, val_idx = NULL, folds = NULL))
+    }
+    
+    return(list(train_idx = NULL, val_idx = NULL, folds = symbol_folds))
+  }
+  
+  # Priority 2: Train/val split
+  if (!is.null(train_idx) && !is.null(val_idx)) {
+    # Find which global train/val indices belong to this symbol
+    symbol_train_global <- intersect(train_idx, global_idx)
+    symbol_val_global <- intersect(val_idx, global_idx)
+    
+    # If this symbol has no observations in train or val, use all data for training
+    if (length(symbol_train_global) == 0 && length(symbol_val_global) == 0) {
+      return(list(train_idx = NULL, val_idx = NULL, folds = NULL))
+    }
+    
+    # If only in one set, fall back to default k-fold
+    if (length(symbol_train_global) == 0 || length(symbol_val_global) == 0) {
+      return(list(train_idx = NULL, val_idx = NULL, folds = NULL))
+    }
+    
+    # Remap global indices to local symbol-specific indices
+    symbol_train_local <- match(symbol_train_global, global_idx)
+    symbol_val_local <- match(symbol_val_global, global_idx)
+    
+    return(list(
+      train_idx = symbol_train_local,
+      val_idx = symbol_val_local,
+      folds = NULL
+    ))
+  }
+  
+  # Default: no custom indices
+  return(list(train_idx = NULL, val_idx = NULL, folds = NULL))
 }
