@@ -53,7 +53,7 @@ grouping_metrics <- mcXY[c(train_idx, val_idx), ] %>%
   group_by(symbol) %>%
   summarise(mean = mean(r, na.rm = TRUE), sd = sd(r, na.rm = TRUE))
 
-km <- kmeans(grouping_metrics %>% select(mean, sd), centers = 5, nstart = 50)
+km <- kmeans(grouping_metrics %>% select(sd), centers = 5, nstart = 50)
 km
 
 qXY$cluster <- km$cluster[match(qXY$symbol, grouping_metrics$symbol)]
