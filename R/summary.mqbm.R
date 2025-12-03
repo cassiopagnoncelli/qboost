@@ -5,7 +5,8 @@
 #' @keywords internal
 .aggregate_symbol_metrics <- function(mqbm_object) {
   # Get fitted values and residuals for all symbols
-  fitted_vals <- fitted(mqbm_object)
+  # Use type="surface" for raw quantile values in statistics
+  fitted_vals <- fitted(mqbm_object, type = "surface")
   y_all <- mqbm_object$training$y
   
   # Compute overall metrics
@@ -46,7 +47,8 @@
 #' @return List with aggregated calibration metrics
 #' @keywords internal
 .aggregate_calibration <- function(mqbm_object) {
-  fitted_vals <- fitted(mqbm_object)
+  # Use type="surface" for raw quantile values in calibration metrics
+  fitted_vals <- fitted(mqbm_object, type = "surface")
   y_all <- mqbm_object$training$y
   
   # Overall calibration

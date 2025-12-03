@@ -461,3 +461,120 @@ test_that("summary.mqbm works with custom multi parameter", {
   expect_equal(summ$multi, "category")
   expect_equal(summ$n_symbols, 2)
 })
+
+test_that("predict.mqbm type='surface' returns raw quantile values", {
+  set.seed(123)
+  df <- data.frame(
+    x1 = rnorm(200),
+    x2 = rnorm(200),
+    symbol = sample(c("A", "B"), 200, replace = TRUE)
+  )
+  df$y <- df$x1 * 0.5 + rnorm(200)
+  
+  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 20, nfolds = 2)
+  
+  newdata <- data.frame(
+    x1 = rnorm(50),
+    x2 = rnorm(50),
+    symbol = sample(c("A", "B"), 50, replace = TRUE)
+  )
+  
+  preds_surface <- predict(fit, newdata, type = "surface")
+  
+  expect_length(preds_surface, 50)
+  expect_type(preds_surface, "double")
+  # Surface predictions are not constrained to [0,1]
+  expect_true(any(preds_surface < 0) || any(preds_surface > 1))
+})
+
+test_that("predict.mqbm type='quantile' returns ECDF probabilities", {
+  set.seed(123)
+  df <- data.frame(
+    x1 = rnorm(200),
+    x2 = rnorm(200),
+    symbol = sample(c("A", "B"), 200, replace = TRUE)
+  )
+  df$y <- df$x1 * 0.5 + rnorm(200)
+  
+  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 20, nfolds = 2)
+  
+  newdata <- data.frame(
+    x1 = rnorm(50),
+    x2 = rnorm(50),
+    symbol = sample(c("A", "B"), 50, replace = TRUE)
+  )
+  
+  preds_quantile <- predict(fit, newdata, type = "quantile")
+  
+  expect_length(preds_quantile, 50)
+  expect_type(preds_quantile, "double")
+  # Quantile predictions should be probabilities in [0,1]
+  expect_true(all(preds_quantile >= 0 & preds_quantile <= 1))
+})
+
+test_that("fitted.mqbm type='surface' returns raw fitted values", {
+  set.seed(123)
+  df <- data.frame(
+    x1 = rnorm(200),
+    x2 = rnorm(200),
+    symbol = sample(c("A", "B"), 200, replace = TRUE)
+  )
+  df$y <- df$x1 * 0.5 + rnorm(200)
+  
+  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 20, nfolds = 2)
+  
+  fitted_surface <- fitted(fit, type = "surface")
+  
+  expect_length(fitted_surface, 200)
+  expect_type(fitted_surface, "double")
+  # Surface fitted values are not constrained to [0,1]
+  expect_true(any(fitted_surface < 0) || any(fitted_surface > 1))
+})
+
+test_that("fitted.mqbm type='quantile' returns ECDF probabilities", {
+  set.seed(123)
+  df <- data.frame(
+    x1 = rnorm(200),
+    x2 = rnorm(200),
+    symbol = sample(c("A", "B"), 200, replace = TRUE)
+  )
+  df$y <- df$x1 * 0.5 + rnorm(200)
+  
+  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 20, nfolds = 2)
+  
+  fitted_quantile <- fitted(fit, type = "quantile")
+  
+  expect_length(fitted_quantile, 200)
+  expect_type(fitted_quantile, "double")
+  # Quantile fitted values should be probabilities in [0,1]
+  expect_true(all(fitted_quantile >= 0 & fitted_quantile <= 1))
+})
+
+test_that("type parameter defaults to 'surface' for backward compatibility", {
+  set.seed(123)
+  df <- data.frame(
+    x1 = rnorm(200),
+    x2 = rnorm(200),
+    symbol = sample(c("A", "B"), 200, replace = TRUE)
+  )
+  df$y <- df$x1 * 0.5 + rnorm(200)
+  
+  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 20, nfolds = 2)
+  
+  newdata <- data.frame(
+    x1 = rnorm(20),
+    x2 = rnorm(20),
+    symbol = sample(c("A", "B"), 20, replace = TRUE)
+  )
+  
+  # Without specifying type, should default to "surface"
+  preds_default <- predict(fit, newdata)
+  preds_surface <- predict(fit, newdata, type = "surface")
+  
+  expect_equal(preds_default, preds_surface)
+  
+  fitted_default <- fitted(fit)
+  fitted_surface <- fitted(fit, type = "surface")
+  
+  expect_equal(fitted_default, fitted_surface)
+})

@@ -48,14 +48,9 @@ test_that("residuals.mqbm works correctly", {
   expect_type(resid, "double")
   expect_false(any(is.na(resid)))
   
-  # Residuals should equal y - raw_fitted (not ECDF-transformed fitted)
-  # Get raw fitted values from internal models
-  raw_fitted <- numeric(200)
-  for (sym in fit$symbols) {
-    idx <- fit$symbol_info[[sym]]$indices
-    raw_fitted[idx] <- fit$models[[sym]]$training$fitted
-  }
-  expect_equal(resid, df$y - raw_fitted)
+  # Residuals should equal y - fitted (using default type="surface")
+  fitted_vals <- fitted(fit, type = "surface")
+  expect_equal(resid, df$y - fitted_vals)
 })
 
 test_that("residuals.mqbm returns residuals in correct order", {
@@ -70,8 +65,9 @@ test_that("residuals.mqbm returns residuals in correct order", {
   # Fit mqbm model
   fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 20, nfolds = 2)
   
-  # Get residuals
+  # Get residuals and fitted values
   resid <- residuals(fit)
+  fitted_vals <- fitted(fit, type = "surface")
   
   # Check each symbol's residuals
   for (sym in fit$symbols) {
@@ -79,13 +75,11 @@ test_that("residuals.mqbm returns residuals in correct order", {
     
     # Extract residuals for this symbol
     resid_sym <- resid[idx]
+    fitted_sym <- fitted_vals[idx]
     y_sym <- df$y[idx]
     
-    # Get raw fitted values from internal model (not ECDF-transformed)
-    raw_fitted_sym <- fit$models[[sym]]$training$fitted
-    
-    # Verify residuals = y - raw_fitted for this symbol
-    expect_equal(resid_sym, y_sym - raw_fitted_sym)
+    # Verify residuals = y - fitted for this symbol
+    expect_equal(resid_sym, y_sym - fitted_sym)
   }
 })
 
@@ -125,16 +119,10 @@ test_that("residuals work with x/y/symbol interface for mqbm", {
   fit <- mqbm(x = x, y = y, symbol = symbol, tau = 0.5, nrounds = 20, nfolds = 2)
   
   resid <- residuals(fit)
-  
-  # Get raw fitted values from internal models (not ECDF-transformed)
-  raw_fitted <- numeric(100)
-  for (sym in fit$symbols) {
-    idx <- fit$symbol_info[[sym]]$indices
-    raw_fitted[idx] <- fit$models[[sym]]$training$fitted
-  }
+  fitted_vals <- fitted(fit, type = "surface")
   
   expect_length(resid, 100)
-  expect_equal(resid, y - raw_fitted)
+  expect_equal(resid, y - fitted_vals)
 })
 
 test_that("residuals sum properties for median quantile", {

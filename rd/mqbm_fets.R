@@ -17,6 +17,7 @@ fets::add_sentiment(quotes, sentiments)
 quotes_fwd_fe <- fets::fe(quotes, inplace = TRUE)
 
 fets::drop_ohlv(quotes_fwd_fe$X)
+quotes_fwd_fe$X[, smoothed_close := NULL]
 
 mXY <- quotes_fwd_fe$X %>%
   na.omit() %>%
