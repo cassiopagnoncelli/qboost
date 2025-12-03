@@ -12,7 +12,10 @@ qbm(
   nfolds = 5,
   params = list(),
   early_stopping_rounds = 50,
-  seed = 1
+  seed = 1,
+  train_idx = NULL,
+  val_idx = NULL,
+  folds = NULL
 )
 
 qboost(
@@ -49,6 +52,17 @@ before stopping. Default is 50.}
 
 \item{seed}{Random seed for reproducibility of cross-validation splits and
 model training. Default is 1.}
+
+\item{train_idx}{Optional integer vector of training indices for single train/val split.
+If provided with \code{val_idx}, performs single holdout validation instead of k-fold CV.
+Ignored if \code{folds} is specified.}
+
+\item{val_idx}{Optional integer vector of validation indices for single train/val split.
+Must be provided together with \code{train_idx}. Ignored if \code{folds} is specified.}
+
+\item{folds}{Optional list of integer vectors specifying custom fold structure for CV.
+Each element should contain validation indices for that fold. Takes priority over
+\code{train_idx}/\code{val_idx} and automatic k-fold generation.}
 }
 \value{
 An object of class \code{qbm} containing:

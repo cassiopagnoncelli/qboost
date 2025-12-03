@@ -10,7 +10,7 @@
 \item{mqbm_object}{A fitted mqbm model}
 }
 \value{
-List with aggregated metrics
+List with aggregated metrics for training and validation
 }
 \description{
 Aggregate metrics across group-specific models

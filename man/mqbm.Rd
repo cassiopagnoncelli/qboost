@@ -12,7 +12,10 @@ mqbm(
   nfolds = 5,
   params = list(),
   early_stopping_rounds = 50,
-  seed = 1
+  seed = 1,
+  train_idx = NULL,
+  val_idx = NULL,
+  folds = NULL
 )
 }
 \arguments{
@@ -36,12 +39,25 @@ symbol-specific models. See \code{\link{qbm}} for available parameters.}
 \item{early_stopping_rounds}{Early stopping patience for each symbol model. Default is 50.}
 
 \item{seed}{Random seed for reproducibility across all symbol models. Default is 1.}
+
+\item{train_idx}{Optional integer vector of training indices (referring to full dataset rows).
+If provided with \code{val_idx}, performs single holdout validation for each symbol.
+Indices are automatically subset per symbol respecting symbol boundaries.
+Ignored if \code{folds} is specified.}
+
+\item{val_idx}{Optional integer vector of validation indices (referring to full dataset rows).
+Must be provided together with \code{train_idx}. Ignored if \code{folds} is specified.}
+
+\item{folds}{Optional list of integer vectors specifying custom fold structure for CV
+(referring to full dataset rows). Each element should contain validation indices for that fold.
+Takes priority over \code{train_idx}/\code{val_idx}. Indices are automatically subset per symbol.}
 }
 \value{
 An object of class \code{mqbm} containing:
 \item{models}{Named list of fitted \code{\link{qbm}} objects, one per symbol}
 \item{symbols}{Character vector of unique symbol identifiers}
 \item{symbol_info}{List with sample size and indices for each symbol}
+\item{ecdf_funs}{Named list of ECDF functions, one per symbol, built from training y values}
 \item{tau}{The target quantile level used}
 \item{preprocess}{Preprocessing information (for formula interface)}
 \item{timings}{Training time information}
@@ -60,8 +76,10 @@ The mqbm (multi-symbol qbm) approach:
 \enumerate{
 \item Partitions data by symbol/group
 \item Trains independent \code{\link{qbm}} models for each symbol
+\item Builds symbol-specific ECDF functions from training y values
 \item Maintains separate hyperparameters and feature importance per symbol
 \item Routes predictions to appropriate symbol-specific model
+\item Transforms predictions through symbol-specific ECDF to return probabilities
 }
 
 This is beneficial when:

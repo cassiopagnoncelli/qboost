@@ -14,7 +14,7 @@
 \item{calibration_list}{Output from .aggregate_calibration}
 }
 \value{
-Tibble with per-symbol summary
+Tibble with per-symbol summary (includes validation if available)
 }
 \description{
 Create per-symbol summary table

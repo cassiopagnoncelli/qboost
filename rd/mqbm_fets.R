@@ -55,15 +55,17 @@ qXY
 
 # Training
 cat("Training mqbm model...\n")
-fit <- mqbm(
+fit <- mqtail(
   y ~ .,
   multi = "symbol",
   data = qXY,
   train_idx = train_idx,
-  val_idx = val_idx,
-  tau = 0.95,
+  val_idx = val_idx,,
+  taus = c(0.95, 0.97, 0.99, 0.995),
+  threshold_tau = 0.97,
   nrounds = 600,
-  early_stopping_rounds = 10
+  early_stopping_rounds = 10,
+  folds = 4
 )
 
 # Fit model
@@ -78,6 +80,6 @@ res <- tibble::tibble(yhat, qXY)
 
 q <- res$yhat[c(train_idx, val_idx)] %>% quantile(0.999)
 res[test_idx, ] %>%
-  dplyr::filter(yhat > q) %>%
+  dplyr::filter(yhat < q) %>%
   dplyr::pull(y) %>%
   analyse(groups = 1)
