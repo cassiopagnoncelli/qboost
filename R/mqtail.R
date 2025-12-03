@@ -104,7 +104,7 @@ mqtail <- function(...,
       message(sprintf("  Symbol %s (n=%d)...", sym, length(idx)))
     }
 
-    # Train qtail for this symbol
+    # Train qtail for this symbol with symbol-specific indices
     models[[sym]] <- qtail(
       x = x_sym,
       y = y_sym,
@@ -112,7 +112,10 @@ mqtail <- function(...,
       tail = tail,
       threshold_tau = threshold_tau,
       params = params,
-      verbose = FALSE  # Suppress qtail's own verbosity
+      verbose = FALSE,  # Suppress qtail's own verbosity
+      train_idx = symbol_indices$train_idx,
+      val_idx = symbol_indices$val_idx,
+      folds = symbol_indices$folds
     )
   }
 

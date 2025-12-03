@@ -190,7 +190,7 @@ qbm <- function(
   
   # Perform k-fold cross-validation
   if (fold_spec$type == "train_val_split" || fold_spec$type == "auto_kfold") {
-    # Standard k-fold CV
+    # Standard k-fold CV - don't use early_stopping_rounds or valids for CV
     set.seed(seed)
     cv_args <- .merge_lgb_args(
       list(
@@ -198,14 +198,17 @@ qbm <- function(
         data = dtrain_cv,
         nrounds = nrounds,
         nfold = nfolds,
-        early_stopping_rounds = early_stopping_rounds,
         verbose = -1
       ),
       extra_args
     )
+    # Remove early_stopping_rounds and valids if accidentally included
+    cv_args$early_stopping_rounds <- NULL
+    cv_args$valids <- NULL
+    
     cv <- do.call(lightgbm::lgb.cv, cv_args)
   } else {
-    # Custom folds
+    # Custom folds - don't use early_stopping_rounds or valids for CV
     dtrain_cv <- lightgbm::lgb.Dataset(data = x, label = y)
     
     set.seed(seed)
@@ -215,11 +218,14 @@ qbm <- function(
         data = dtrain_cv,
         nrounds = nrounds,
         folds = fold_spec$folds,
-        early_stopping_rounds = early_stopping_rounds,
         verbose = -1
       ),
       extra_args
     )
+    # Remove early_stopping_rounds and valids if accidentally included
+    cv_args$early_stopping_rounds <- NULL
+    cv_args$valids <- NULL
+    
     cv <- do.call(lightgbm::lgb.cv, cv_args)
   }
 
@@ -247,6 +253,10 @@ qbm <- function(
     ),
     extra_args
   )
+  # Remove early_stopping_rounds and valids from final training (no validation set)
+  train_args$early_stopping_rounds <- NULL
+  train_args$valids <- NULL
+  
   final_model <- do.call(lightgbm::lgb.train, train_args)
 
   # Get fitted values and compute metrics

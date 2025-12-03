@@ -6,7 +6,7 @@ library("dtools")
 library("dplyr")
 
 quotes <- qetl::get_sample_quotes()
-quotes <- quotes[symbol %in% sample(unique(quotes$symbol), 100)]
+quotes <- quotes[symbol %in% sample(unique(quotes$symbol), 60)]
 
 fets::fwd(quotes, lookahead = 15, inplace = TRUE)
 
@@ -54,24 +54,35 @@ grouping_metrics <- mcXY[c(train_idx, val_idx), ] %>%
   summarise(mean = mean(r, na.rm = TRUE), sd = sd(r, na.rm = TRUE))
 
 km <- kmeans(grouping_metrics %>% select(mean, sd), centers = 5, nstart = 50)
-km
+
+km$cluster
 
 qXY$cluster <- km$cluster[match(qXY$symbol, grouping_metrics$symbol)]
 qXY$symbol <- NULL
 
-# Fit model
-fit <- mqbm(
+# Training mqtail model
+# Note: mqtail fits multiple qbm models per symbol (taus × n_symbols)
+# With 60 symbols and 4 taus = 240 qbm models - this will take time!
+cat("Training mqtail model for", length(unique(qXY$symbol)), "symbols...\n")
+cat("This will fit", length(c(0.95, 0.97, 0.99, 0.995)), "× symbols qbm models\n")
+
+fit <- mqtail(
   y ~ .,
   multi = "cluster",
   data = qXY,
   train_idx = train_idx,
   val_idx = val_idx,
-  tau = 0.99,
-  nrounds = 600,
-  early_stopping_rounds = 10
+  taus = c(0.95, 0.97, 0.99, 0.995),
+  threshold_tau = 0.97,
+  params = list(
+    nrounds = 600,
+    early_stopping_rounds = 10,
+    nfolds = 4
+  ),
+  verbose = TRUE
 )
 
-# Summary
+# Fit model
 print(fit)
 
 summary(fit)
@@ -83,6 +94,6 @@ res <- tibble::tibble(yhat, qXY)
 
 q <- res$yhat[c(train_idx, val_idx)] %>% quantile(0.999)
 res[test_idx, ] %>%
-  dplyr::filter(yhat > q) %>%
+  dplyr::filter(yhat < q) %>%
   dplyr::pull(y) %>%
   analyse(groups = 1)

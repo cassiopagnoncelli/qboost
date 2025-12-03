@@ -31,7 +31,7 @@
 }
 
 # Helper: Fit qbm models for each tau
-.qtail_fit_models <- function(x, y, taus, params, verbose, step_info) {
+.qtail_fit_models <- function(x, y, taus, params, verbose, step_info, train_idx = NULL, val_idx = NULL, folds = NULL) {
   models <- list()
   for (j in seq_along(taus)) {
     tau <- taus[j]
@@ -51,7 +51,10 @@
       nrounds = params$nrounds %||% 500,
       nfolds = params$nfolds %||% 5,
       early_stopping_rounds = params$early_stopping_rounds %||% 50,
-      params = params
+      params = params,
+      train_idx = train_idx,
+      val_idx = val_idx,
+      folds = folds
     )
 
     if (verbose) {
@@ -375,7 +378,10 @@ qtail <- function(...,
                   tail = c("upper", "lower"),
                   threshold_tau = NULL,
                   params = list(),
-                  verbose = FALSE) {
+                  verbose = FALSE,
+                  train_idx = NULL,
+                  val_idx = NULL,
+                  folds = NULL) {
   tail <- match.arg(tail)
 
   # Parse inputs
@@ -419,7 +425,7 @@ qtail <- function(...,
   n <- length(y)
 
   # Step 2: Fit qbm models
-  models <- .qtail_fit_models(x, y, taus, params, verbose, step_info)
+  models <- .qtail_fit_models(x, y, taus, params, verbose, step_info, train_idx, val_idx, folds)
   step_info$current <- step_info$current + length(taus)
 
   # Step 3: Build stacking matrix
