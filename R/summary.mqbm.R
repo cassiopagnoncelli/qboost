@@ -235,7 +235,7 @@
 #'   Default is 10.
 #' @param ... Additional arguments (currently unused).
 #'
-#' @importFrom stats fitted
+#' @importFrom stats fitted weighted.mean
 #'
 #' @return An object of class \code{mqbm_summary} containing:
 #'   \item{tau}{Target quantile level}

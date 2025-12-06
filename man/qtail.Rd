@@ -41,6 +41,19 @@ quantile model. Common parameters: \code{nrounds}, \code{nfolds},
 
 \item{verbose}{Logical; if \code{TRUE}, prints detailed progress messages
 for each fitting stage. Default is \code{FALSE}.}
+
+\item{train_idx}{Optional integer vector of training indices. If provided
+with \code{val_idx}, performs single holdout validation. Passed to
+\code{\link{qbm}} for each quantile model. Ignored if \code{folds} is specified.}
+
+\item{val_idx}{Optional integer vector of validation indices. Must be
+provided together with \code{train_idx}. Passed to \code{\link{qbm}}
+for each quantile model. Ignored if \code{folds} is specified.}
+
+\item{folds}{Optional list of integer vectors specifying custom fold
+structure for cross-validation. Each element should contain validation
+indices for that fold. Takes priority over \code{train_idx}/\code{val_idx}.
+Passed to \code{\link{qbm}} for each quantile model.}
 }
 \value{
 An object of class \code{qtail} containing:

@@ -279,6 +279,16 @@
 #'   \code{early_stopping_rounds}. See \code{\link{qbm}} for details.
 #' @param verbose Logical; if \code{TRUE}, prints detailed progress messages
 #'   for each fitting stage. Default is \code{FALSE}.
+#' @param train_idx Optional integer vector of training indices. If provided
+#'   with \code{val_idx}, performs single holdout validation. Passed to
+#'   \code{\link{qbm}} for each quantile model. Ignored if \code{folds} is specified.
+#' @param val_idx Optional integer vector of validation indices. Must be
+#'   provided together with \code{train_idx}. Passed to \code{\link{qbm}}
+#'   for each quantile model. Ignored if \code{folds} is specified.
+#' @param folds Optional list of integer vectors specifying custom fold
+#'   structure for cross-validation. Each element should contain validation
+#'   indices for that fold. Takes priority over \code{train_idx}/\code{val_idx}.
+#'   Passed to \code{\link{qbm}} for each quantile model.
 #'
 #' @return An object of class \code{qtail} containing:
 #'   \item{taus}{Vector of fitted quantile levels}

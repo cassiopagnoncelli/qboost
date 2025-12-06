@@ -106,7 +106,7 @@ mqtail <- function(...,
     )
     
     if (verbose) {
-      message(sprintf("  ✓ Completed tau=%.4f", tau))
+      message(sprintf("  Completed tau=%.4f", tau))
     }
   }
 
@@ -149,7 +149,7 @@ mqtail <- function(...,
     
     if (length(e_exc) < 10) {
       if (verbose) {
-        message(sprintf("  ⚠ Only %d exceedances, using default GPD parameters", length(e_exc)))
+        message(sprintf("  WARNING: Only %d exceedances, using default GPD parameters", length(e_exc)))
       }
       beta <- ifelse(length(e_exc) > 0, stats::sd(e_exc), 1.0)
     } else {
@@ -163,10 +163,10 @@ mqtail <- function(...,
         xi <- coef_evt[1]
         beta <- exp(coef_evt[2])
         if (verbose) {
-          message(sprintf("  ✓ GPD fit: xi=%.4f, beta=%.4f", xi, beta))
+          message(sprintf("  GPD fit: xi=%.4f, beta=%.4f", xi, beta))
         }
       }, error = function(e) {
-        if (verbose) message(sprintf("  ✗ GPD fit failed, using defaults (xi=%.4f, beta=%.4f)", xi, beta))
+        if (verbose) message(sprintf("  GPD fit failed, using defaults (xi=%.4f, beta=%.4f)", xi, beta))
         beta <<- stats::sd(e_exc)
       })
     }
