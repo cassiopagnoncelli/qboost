@@ -144,8 +144,8 @@ newdata <- data.frame(x1 = c(-2, 0, 2), x2 = c(0, 1, -1))
 predict(fit_upper, newdata)
 
 # Access GPD parameters
-fit_upper$evt$xi     # Shape parameter
-fit_upper$evt$beta   # Scale parameter
+fit_upper$evt$xi # Shape parameter
+fit_upper$evt$beta # Scale parameter
 
 # Matrix interface
 X <- as.matrix(df[, c("x1", "x2")])

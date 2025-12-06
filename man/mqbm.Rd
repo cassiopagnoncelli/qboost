@@ -102,8 +102,9 @@ df <- data.frame(
 )
 # Different groups have different relationships
 df$y <- ifelse(df$cluster == "AAPL",
-               df$x1 * 2 + rnorm(300),
-               df$x1 * 0.5 + df$x2 * 1.5 + rnorm(300))
+  df$x1 * 2 + rnorm(300),
+  df$x1 * 0.5 + df$x2 * 1.5 + rnorm(300)
+)
 
 # Formula interface - data must contain multiplexer column
 fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 100)
@@ -122,8 +123,8 @@ X <- as.matrix(df[, c("x1", "x2")])
 fit2 <- mqbm(x = X, y = df$y, multiplexer = df$cluster, tau = 0.75)
 
 # Access group-specific models
-fit$models$AAPL  # qbm model for AAPL
-coef(fit)  # Feature importance per group
+fit$models$AAPL # qbm model for AAPL
+coef(fit) # Feature importance per group
 
 # Different quantiles per group
 fit_lower <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.1)

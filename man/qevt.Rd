@@ -85,7 +85,7 @@ df$y <- exp(df$x1 * 0.5 + df$x2 * 0.3 + rnorm(n, sd = 0.5))
 fit <- qevt(
   y ~ x1 + x2,
   data = df,
-  tau_target = 0.9999,  # 99.99th percentile
+  tau_target = 0.9999, # 99.99th percentile
   taus = c(0.997, 0.9985, 0.999, 0.9993)
 )
 
@@ -97,9 +97,9 @@ newdata <- data.frame(x1 = c(-1, 0, 1), x2 = c(0, 0, 0))
 predict(fit, newdata)
 
 # Access model components
-fit$gpd$xi           # GPD shape parameter
-fit$gpd$beta         # GPD scale parameter
-fit$gpd$converged    # Convergence status
+fit$gpd$xi # GPD shape parameter
+fit$gpd$beta # GPD scale parameter
+fit$gpd$converged # Convergence status
 
 # Matrix interface
 X <- as.matrix(df[, c("x1", "x2")])

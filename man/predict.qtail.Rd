@@ -78,20 +78,22 @@ diagnosing model behavior or when EVT extrapolation is not desired.
 # Train qtail model
 df <- data.frame(x1 = rnorm(200), x2 = rnorm(200))
 df$y <- df$x1 * 2 + rt(200, df = 3) * 2
-fit <- qtail(y ~ x1 + x2, data = df, tail = "upper",
-             params = list(nrounds = 100))
+fit <- qtail(y ~ x1 + x2,
+  data = df, tail = "upper",
+  params = list(nrounds = 100)
+)
 
 # Predict at default target quantile
 newdata <- data.frame(x1 = c(-1, 0, 1), x2 = c(0, 0, 0))
-predict(fit, newdata)  # type = "final" by default
+predict(fit, newdata) # type = "final" by default
 
 # Different prediction types
-predict(fit, newdata, type = "stack")  # Stacked only
-predict(fit, newdata, type = "grid")   # All quantile models
-predict(fit, newdata, type = "evt")    # EVT component only
+predict(fit, newdata, type = "stack") # Stacked only
+predict(fit, newdata, type = "grid") # All quantile models
+predict(fit, newdata, type = "evt") # EVT component only
 
 # Override target quantile
-predict(fit, newdata, tau_override = 0.9999)  # Even more extreme
+predict(fit, newdata, tau_override = 0.9999) # Even more extreme
 
 # Decompose predictions
 stack_pred <- predict(fit, newdata, type = "stack")
