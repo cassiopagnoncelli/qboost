@@ -19,7 +19,7 @@ coef.mqtail <- function(object, ...) {
   params_list <- lapply(object$multiplexer_values, function(val) {
     evt <- object$evt_models[[val]]
     data.frame(
-      multiplexer_gate = val,
+      value = val,
       xi = evt$xi,
       beta = evt$beta,
       n_exceedances = evt$n_exceedances,

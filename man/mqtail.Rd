@@ -10,6 +10,10 @@ mqtail(
   taus = NULL,
   tail = c("upper", "lower"),
   threshold_tau = NULL,
+  nrounds = 500,
+  nfolds = 5,
+  early_stopping_rounds = 50,
+  seed = 1,
   params = list(),
   verbose = FALSE,
   train_idx = NULL,
@@ -31,7 +35,15 @@ based on \code{tail} direction.}
 \item{threshold_tau}{Quantile level for EVT threshold. Must be in \code{taus}.
 If \code{NULL}, defaults to 0.99 for upper tail or 0.01 for lower tail.}
 
-\item{params}{Named list of parameters for \code{\link{qbm}} models.}
+\item{nrounds}{Maximum number of boosting rounds. Default is 500.}
+
+\item{nfolds}{Number of CV folds for early stopping. Default is 5.}
+
+\item{early_stopping_rounds}{Early stopping rounds. Default is 50.}
+
+\item{seed}{Random seed. Default is 1.}
+
+\item{params}{Additional named list of parameters for \code{\link{lightgbm}}.}
 
 \item{verbose}{Logical; print progress messages. Default is \code{FALSE}.}
 

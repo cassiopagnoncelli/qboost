@@ -15,7 +15,7 @@
 An object of class \code{mqtail_summary}.
 }
 \description{
-Aggregates performance metrics across all group-specific models.
+Aggregates performance metrics per multiplexer gate.
 }
 \seealso{
 \code{\link{mqtail}}, \code{\link{summary.qtail}}
