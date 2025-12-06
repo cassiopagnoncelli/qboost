@@ -40,10 +40,10 @@ residuals.mqbm <- function(object, ...) {
   if (!inherits(object, "mqbm")) {
     stop("`object` must be a mqbm model.", call. = FALSE)
   }
-  
+
   # Initialize residuals vector with same length as training data
   residuals_vals <- numeric(object$data_info$n)
-  
+
   # Get residuals from each group-specific model
   for (val in object$multiplexer_values) {
     idx <- object$multiplexer_info[[val]]$indices
@@ -52,6 +52,6 @@ residuals.mqbm <- function(object, ...) {
     fitted_val <- object$models[[val]]$training$fitted
     residuals_vals[idx] <- y_val - fitted_val
   }
-  
+
   residuals_vals
 }

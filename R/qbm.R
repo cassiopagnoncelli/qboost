@@ -187,7 +187,7 @@ qbm <- function(
     # No indices specified - use full data
     dtrain_cv <- lightgbm::lgb.Dataset(data = x, label = y)
   }
-  
+
   # Perform k-fold cross-validation
   if (fold_spec$type == "train_val_split" || fold_spec$type == "auto_kfold") {
     # Standard k-fold CV - don't use early_stopping_rounds or valids for CV
@@ -205,12 +205,12 @@ qbm <- function(
     # Remove early_stopping_rounds and valids if accidentally included
     cv_args$early_stopping_rounds <- NULL
     cv_args$valids <- NULL
-    
+
     cv <- do.call(lightgbm::lgb.cv, cv_args)
   } else {
     # Custom folds - don't use early_stopping_rounds or valids for CV
     dtrain_cv <- lightgbm::lgb.Dataset(data = x, label = y)
-    
+
     set.seed(seed)
     cv_args <- .merge_lgb_args(
       list(
@@ -225,7 +225,7 @@ qbm <- function(
     # Remove early_stopping_rounds and valids if accidentally included
     cv_args$early_stopping_rounds <- NULL
     cv_args$valids <- NULL
-    
+
     cv <- do.call(lightgbm::lgb.cv, cv_args)
   }
 
@@ -256,7 +256,7 @@ qbm <- function(
   # Remove early_stopping_rounds and valids from final training (no validation set)
   train_args$early_stopping_rounds <- NULL
   train_args$valids <- NULL
-  
+
   final_model <- do.call(lightgbm::lgb.train, train_args)
 
   # Get fitted values and compute metrics
@@ -264,12 +264,12 @@ qbm <- function(
     # Separate train and validation predictions
     fitted_train <- .lgb_predict(final_model, x[fold_spec$train_idx, , drop = FALSE])
     fitted_val <- .lgb_predict(final_model, x[fold_spec$val_idx, , drop = FALSE])
-    
+
     # Create full fitted vector (val indices are NA for compatibility)
     fitted <- numeric(nrow(x))
     fitted[fold_spec$train_idx] <- fitted_train
     fitted[fold_spec$val_idx] <- NA_real_
-    
+
     # Compute separate metrics for train and validation
     train_metrics <- compute_qbm_metrics(
       y = y[fold_spec$train_idx],
@@ -279,7 +279,7 @@ qbm <- function(
       model = final_model,
       best_iter = best_iter
     )
-    
+
     val_metrics <- compute_qbm_metrics(
       y = y[fold_spec$val_idx],
       yhat = fitted_val,
@@ -291,7 +291,7 @@ qbm <- function(
   } else {
     # No train/val split - compute on full data
     fitted <- .lgb_predict(final_model, x)
-    
+
     train_metrics <- compute_qbm_metrics(
       y = y,
       yhat = fitted,
@@ -300,7 +300,7 @@ qbm <- function(
       model = final_model,
       best_iter = best_iter
     )
-    
+
     val_metrics <- NULL
   }
 
@@ -471,7 +471,7 @@ qbm <- function(
       val_idx = NULL
     ))
   }
-  
+
   # Priority 2: Train/val split
   if (!is.null(train_idx) || !is.null(val_idx)) {
     if (is.null(train_idx) || is.null(val_idx)) {
@@ -492,10 +492,10 @@ qbm <- function(
     if (any(train_idx %in% val_idx)) {
       stop("`train_idx` and `val_idx` must not overlap.", call. = FALSE)
     }
-    
+
     # Create single fold for LightGBM
     folds_list <- list(val_idx)
-    
+
     return(list(
       type = "train_val_split",
       folds = folds_list,
@@ -504,7 +504,7 @@ qbm <- function(
       val_idx = val_idx
     ))
   }
-  
+
   # Priority 3: Automatic k-fold (default)
   list(
     type = "auto_kfold",

@@ -60,7 +60,7 @@ mqtail <- function(...,
   }
 
   threshold_tau <- threshold_tau %||% if (tail == "upper") 0.99 else 0.01
-  
+
   if (!threshold_tau %in% taus) {
     stop("`threshold_tau` must be one of the values in `taus`", call. = FALSE)
   }
@@ -77,14 +77,14 @@ mqtail <- function(...,
 
   # Train one mqbm per tau
   mqbm_models <- list()
-  
+
   if (verbose) {
     message(sprintf("\n=== Fitting %d mqbm Models (one per tau) ===", length(taus)))
   }
-  
+
   for (j in seq_along(taus)) {
     tau <- taus[j]
-    
+
     if (verbose) {
       message(sprintf("[%d/%d] Fitting mqbm for tau=%.4f...", j, length(taus), tau))
     }
@@ -103,7 +103,7 @@ mqtail <- function(...,
       val_idx = val_idx,
       folds = folds
     )
-    
+
     if (verbose) {
       message(sprintf("  Completed tau=%.4f", tau))
     }
@@ -113,39 +113,39 @@ mqtail <- function(...,
   first_mqbm <- mqbm_models[[1]]
   multiplexer_values <- first_mqbm$multiplexer_values
   multiplexer_info <- first_mqbm$multiplexer_info
-  
+
   # Fit GPD per multiplexer value
   if (verbose) {
     message(sprintf("\n=== Fitting GPD Models for %d Multiplexer Gates ===", length(multiplexer_values)))
     message(sprintf("Using threshold tau: %.4f", threshold_tau))
   }
-  
+
   evt_models <- list()
   thresh_mqbm <- mqbm_models[[as.character(threshold_tau)]]
-  
+
   for (val_idx in seq_along(multiplexer_values)) {
     val <- multiplexer_values[val_idx]
-    
+
     if (verbose) {
       message(sprintf("[%d/%d] Processing multiplexer gate: %s", val_idx, length(multiplexer_values), val))
     }
-    
+
     # Get training data for this value
     idx <- thresh_mqbm$multiplexer_info[[val]]$indices
     y_grp <- thresh_mqbm$training$y[idx]
-    
+
     # Get threshold predictions
     fitted_thresh <- fitted(thresh_mqbm$models[[val]])
-    
+
     # Compute exceedances
     r <- y_grp - fitted_thresh
     e <- if (tail == "upper") pmax(r, 0) else pmax(-r, 0)
     e_exc <- e[e > 0 & is.finite(e)]
-    
+
     # Fit GPD
     xi <- 0.1
     beta <- 1.0
-    
+
     if (length(e_exc) < 10) {
       if (verbose) {
         message(sprintf("  WARNING: Only %d exceedances, using default GPD parameters", length(e_exc)))
@@ -155,21 +155,24 @@ mqtail <- function(...,
       if (verbose) {
         message(sprintf("  Fitting GPD with %d exceedances", length(e_exc)))
       }
-      tryCatch({
-        evt_data <- data.frame(y = as.numeric(e_exc))
-        evfit <- evgam::evgam(y ~ 1, data = evt_data, family = "gpd")
-        coef_evt <- stats::coef(evfit)
-        xi <- coef_evt[1]
-        beta <- exp(coef_evt[2])
-        if (verbose) {
-          message(sprintf("  GPD fit: xi=%.4f, beta=%.4f", xi, beta))
+      tryCatch(
+        {
+          evt_data <- data.frame(y = as.numeric(e_exc))
+          evfit <- evgam::evgam(y ~ 1, data = evt_data, family = "gpd")
+          coef_evt <- stats::coef(evfit)
+          xi <- coef_evt[1]
+          beta <- exp(coef_evt[2])
+          if (verbose) {
+            message(sprintf("  GPD fit: xi=%.4f, beta=%.4f", xi, beta))
+          }
+        },
+        error = function(e) {
+          if (verbose) message(sprintf("  GPD fit failed, using defaults (xi=%.4f, beta=%.4f)", xi, beta))
+          beta <<- stats::sd(e_exc)
         }
-      }, error = function(e) {
-        if (verbose) message(sprintf("  GPD fit failed, using defaults (xi=%.4f, beta=%.4f)", xi, beta))
-        beta <<- stats::sd(e_exc)
-      })
+      )
     }
-    
+
     evt_models[[val]] <- list(
       xi = xi,
       beta = beta,
@@ -179,7 +182,7 @@ mqtail <- function(...,
 
   end_time <- Sys.time()
   elapsed <- as.numeric(difftime(end_time, start_time, units = "secs"))
-  
+
   if (verbose) {
     message(sprintf("\n=== mqtail Fitting Complete ==="))
     message(sprintf("Total time: %.2f seconds", elapsed))

@@ -14,10 +14,12 @@ df <- data.frame(
 
 # Each symbol has different tail behavior (using t-distributions with different df)
 df$y <- ifelse(df$symbol == "AAPL",
-               2 * df$x1 - 0.5 * df$x2 + 0.3 * df$x3 + 2 * rt(n, df = 3),  # heavier tails
-               ifelse(df$symbol == "GOOGL",
-                      1.5 * df$x1 + 1.0 * df$x2 - 0.2 * df$x3 + 1.5 * rt(n, df = 5),  # moderate tails
-                      1.0 * df$x1 - 1.0 * df$x2 + 0.5 * df$x3 + 1.0 * rt(n, df = 7)))  # lighter tails
+  2 * df$x1 - 0.5 * df$x2 + 0.3 * df$x3 + 2 * rt(n, df = 3), # heavier tails
+  ifelse(df$symbol == "GOOGL",
+    1.5 * df$x1 + 1.0 * df$x2 - 0.2 * df$x3 + 1.5 * rt(n, df = 5), # moderate tails
+    1.0 * df$x1 - 1.0 * df$x2 + 0.5 * df$x3 + 1.0 * rt(n, df = 7)
+  )
+) # lighter tails
 
 # Split data
 train_idx <- 1:floor(0.7 * n)
@@ -75,8 +77,10 @@ for (val in fit$multiplexer_values) {
     n_exceed <- sum(val_actuals > val_preds)
     exceed_rate <- n_exceed / length(val_idx)
 
-    cat(sprintf("  %s: mean_pred=%.3f, n=%d, exceedances=%d (%.1f%%)\n",
-                val, mean(val_preds), length(val_idx), n_exceed, exceed_rate * 100))
+    cat(sprintf(
+      "  %s: mean_pred=%.3f, n=%d, exceedances=%d (%.1f%%)\n",
+      val, mean(val_preds), length(val_idx), n_exceed, exceed_rate * 100
+    ))
   }
 }
 
@@ -86,8 +90,10 @@ for (val in fit$multiplexer_values) {
 cat("\n\nComparing GPD parameters per multiplexer value:\n")
 for (val in fit$multiplexer_values) {
   evt <- fit$evt_models[[val]]
-  cat(sprintf("  %s: xi=%.4f, beta=%.4f, n_exceedances=%d\n",
-              val, evt$xi, evt$beta, evt$n_exceedances))
+  cat(sprintf(
+    "  %s: xi=%.4f, beta=%.4f, n_exceedances=%d\n",
+    val, evt$xi, evt$beta, evt$n_exceedances
+  ))
 }
 
 # ------------------------------------------------------------------
@@ -119,18 +125,21 @@ df2 <- data.frame(
 
 # Different tail behavior per region
 df2$y <- ifelse(df2$region == "North",
-                df2$x1 + rt(1000, df = 4),
-                ifelse(df2$region == "South",
-                       df2$x2 + rt(1000, df = 4),
-                       ifelse(df2$region == "East",
-                              df2$x3 + rt(1000, df = 4),
-                              df2$x1 + df2$x2 + rt(1000, df = 4))))
+  df2$x1 + rt(1000, df = 4),
+  ifelse(df2$region == "South",
+    df2$x2 + rt(1000, df = 4),
+    ifelse(df2$region == "East",
+      df2$x3 + rt(1000, df = 4),
+      df2$x1 + df2$x2 + rt(1000, df = 4)
+    )
+  )
+)
 
 # Train with custom multiplexer parameter
 fit2 <- mqtail(
   y ~ x1 + x2 + x3,
   data = df2,
-  multiplexer = "region",  # Use "region" instead of "symbol"
+  multiplexer = "region", # Use "region" instead of "symbol"
   tail = "upper",
   taus = c(0.95, 0.98, 0.99),
   threshold_tau = 0.98,

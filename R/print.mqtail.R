@@ -22,7 +22,8 @@ print.mqtail <- function(x, ...) {
   cat(" Multiplexer:      ", multiplexer_name, "\n", sep = "")
   cat(
     " Values:           ", length(x$multiplexer_values),
-    " (", paste(x$multiplexer_values, collapse = ", "), ")\n", sep = ""
+    " (", paste(x$multiplexer_values, collapse = ", "), ")\n",
+    sep = ""
   )
 
   cat("\nModels per multiplexer value:\n")

@@ -21,7 +21,7 @@ residuals.mqtail <- function(object, ...) {
   thresh_mqbm <- object$mqbm_models[[as.character(object$threshold_tau)]]
   fitted_vals <- fitted(thresh_mqbm, type = "surface")
   y_vals <- thresh_mqbm$training$y
-  
+
   # Compute residuals
   y_vals - fitted_vals
 }

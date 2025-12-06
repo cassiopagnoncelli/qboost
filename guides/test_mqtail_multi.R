@@ -10,7 +10,7 @@ n_per_group <- 150
 df <- data.frame(
   x1 = rnorm(n_per_group * 3),
   x2 = rnorm(n_per_group * 3),
-  ticker = rep(c("STOCK_A", "STOCK_B", "STOCK_C"), each = n_per_group)  # Custom column name!
+  ticker = rep(c("STOCK_A", "STOCK_B", "STOCK_C"), each = n_per_group) # Custom column name!
 )
 # Heavy-tailed response
 df$y <- 1.5 * df$x1 + 0.8 * df$x2 + rt(n_per_group * 3, df = 3)
@@ -52,7 +52,7 @@ X <- as.matrix(df[, c("x1", "x2")])
 fit2 <- mqtail(
   x = X,
   y = df$y,
-  ticker = df$ticker,  # Passing ticker as named argument
+  ticker = df$ticker, # Passing ticker as named argument
   multi = "ticker",
   tail = "upper",
   taus = c(0.95, 0.97, 0.99),
@@ -69,16 +69,19 @@ cat("Multi parameter:", fit2$multi, "\n")
 cat("\n=== Test 3: Error handling - missing multi column ===\n")
 df_bad <- df
 df_bad$ticker <- NULL
-tryCatch({
-  fit_bad <- mqtail(
-    y ~ x1 + x2,
-    data = df_bad,
-    multi = "ticker",
-    params = list(nrounds = 10)
-  )
-  cat("ERROR: Should have failed but didn't!\n")
-}, error = function(e) {
-  cat("Correctly caught error:", conditionMessage(e), "\n")
-})
+tryCatch(
+  {
+    fit_bad <- mqtail(
+      y ~ x1 + x2,
+      data = df_bad,
+      multi = "ticker",
+      params = list(nrounds = 10)
+    )
+    cat("ERROR: Should have failed but didn't!\n")
+  },
+  error = function(e) {
+    cat("Correctly caught error:", conditionMessage(e), "\n")
+  }
+)
 
 cat("\n✓ All tests passed! multi parameter works correctly.\n")

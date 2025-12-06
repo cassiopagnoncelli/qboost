@@ -33,7 +33,7 @@ cat("  Symbol count:", length(mqbm_fit$symbols), "\n")
 cat("  Has ecdf_funs:", !is.null(mqbm_fit$ecdf_funs), "\n")
 cat("  Has symbol_info:", !is.null(mqbm_fit$symbol_info), "\n")
 
-# Test mqtail  
+# Test mqtail
 cat("\n=== Testing mqtail ===\n")
 mqtail_fit <- mqtail(
   y ~ x1 + x2,
@@ -74,18 +74,24 @@ cat("\n=== Testing Error Handling ===\n")
 df_bad <- df
 df_bad$group_id <- NULL
 
-tryCatch({
-  mqbm(y ~ x1 + x2, data = df_bad, multi = "group_id", nrounds = 10)
-  cat("ERROR: mqbm should have failed\n")
-}, error = function(e) {
-  cat("mqbm correctly caught error:", conditionMessage(e), "\n")
-})
+tryCatch(
+  {
+    mqbm(y ~ x1 + x2, data = df_bad, multi = "group_id", nrounds = 10)
+    cat("ERROR: mqbm should have failed\n")
+  },
+  error = function(e) {
+    cat("mqbm correctly caught error:", conditionMessage(e), "\n")
+  }
+)
 
-tryCatch({
-  mqtail(y ~ x1 + x2, data = df_bad, multi = "group_id", params = list(nrounds = 10))
-  cat("ERROR: mqtail should have failed\n")
-}, error = function(e) {
-  cat("mqtail correctly caught error:", conditionMessage(e), "\n")
-})
+tryCatch(
+  {
+    mqtail(y ~ x1 + x2, data = df_bad, multi = "group_id", params = list(nrounds = 10))
+    cat("ERROR: mqtail should have failed\n")
+  },
+  error = function(e) {
+    cat("mqtail correctly caught error:", conditionMessage(e), "\n")
+  }
+)
 
 cat("\n✓ Both mqbm and mqtail handle multi parameter identically!\n")

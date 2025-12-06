@@ -15,8 +15,10 @@ df <- data.frame(
 # Heavy-tailed response (Student-t)
 df$y <- 2 * df$x1 + 0.5 * df$x2 + rt(n_per_symbol * 2, df = 3)
 
-cat("Data: ", nrow(df), " rows, ", ncol(df) - 2, " features, ", 
-    length(unique(df$symbol)), " symbols\n\n", sep = "")
+cat("Data: ", nrow(df), " rows, ", ncol(df) - 2, " features, ",
+  length(unique(df$symbol)), " symbols\n\n",
+  sep = ""
+)
 
 # Fit mqtail model
 cat("Fitting mqtail model...\n")

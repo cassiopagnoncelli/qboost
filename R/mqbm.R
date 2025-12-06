@@ -74,8 +74,9 @@
 #' )
 #' # Different groups have different relationships
 #' df$y <- ifelse(df$cluster == "AAPL",
-#'                df$x1 * 2 + rnorm(300),
-#'                df$x1 * 0.5 + df$x2 * 1.5 + rnorm(300))
+#'   df$x1 * 2 + rnorm(300),
+#'   df$x1 * 0.5 + df$x2 * 1.5 + rnorm(300)
+#' )
 #'
 #' # Formula interface - data must contain multiplexer column
 #' fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 100)
@@ -94,8 +95,8 @@
 #' fit2 <- mqbm(x = X, y = df$y, multiplexer = df$cluster, tau = 0.75)
 #'
 #' # Access group-specific models
-#' fit$models$AAPL  # qbm model for AAPL
-#' coef(fit)  # Feature importance per group
+#' fit$models$AAPL # qbm model for AAPL
+#' coef(fit) # Feature importance per group
 #'
 #' # Different quantiles per group
 #' fit_lower <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.1)
@@ -138,21 +139,21 @@ mqbm <- function(
   models <- list()
   multiplexer_info <- list()
   ecdf_funs <- list()
-  
+
   for (val in unique_values) {
     idx <- which(multiplexer_vector == val)
     x_val <- x[idx, , drop = FALSE]
     y_val <- y[idx]
-    
+
     # Store group-specific info
     multiplexer_info[[val]] <- list(
       n = length(idx),
       indices = idx
     )
-    
+
     # Build ECDF for this group's training y values
     ecdf_funs[[val]] <- stats::ecdf(y_val)
-    
+
     # Subset and remap train/val indices for this group
     group_indices <- .subset_indices_for_group(
       global_idx = idx,
@@ -160,7 +161,7 @@ mqbm <- function(
       val_idx = val_idx,
       folds = folds
     )
-    
+
     # Train qbm for this group with group-specific indices
     if (parsed$preprocess$type == "formula") {
       # For formula interface, we need to reconstruct the call
@@ -264,7 +265,7 @@ mqbm <- function(
     }
 
     data <- dots[[data_idx]]
-    
+
     if (!multiplexer %in% names(data)) {
       stop(sprintf("`data` must contain a '%s' column.", multiplexer), call. = FALSE)
     }
@@ -312,18 +313,18 @@ mqbm <- function(
       call. = FALSE
     )
   }
-  
+
   y_idx <- if ("y" %in% nm) {
     which(nm == "y")[1]
   } else {
     remaining[1]
   }
-  
+
   remaining <- setdiff(remaining, y_idx)
   if (length(remaining) == 0) {
     stop(sprintf("`%s` must be provided when using `x`/`y`/`%s` inputs.", multiplexer, multiplexer), call. = FALSE)
   }
-  
+
   # Get the multiplexer parameter
   multiplexer_idx <- if (multiplexer %in% nm) {
     which(nm == multiplexer)[1]

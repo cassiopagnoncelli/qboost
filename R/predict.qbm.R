@@ -42,7 +42,7 @@
 #' # Compare multiple quantiles
 #' fit_lower <- qbm(y ~ x1 + x2, data = df, tau = 0.1, nrounds = 50)
 #' fit_upper <- qbm(y ~ x1 + x2, data = df, tau = 0.9, nrounds = 50)
-#' 
+#'
 #' data.frame(
 #'   lower = predict(fit_lower, newdata),
 #'   median = predict(fit, newdata),

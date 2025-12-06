@@ -8,20 +8,20 @@
   # Use type="surface" for raw quantile values in statistics
   fitted_vals <- fitted(mqbm_object, type = "surface")
   y_all <- mqbm_object$training$y
-  
+
   # Check if any model has validation metrics
   has_validation <- any(sapply(mqbm_object$models, function(m) !is.null(m$validation)))
-  
+
   # Compute overall training metrics (excluding NA values from validation set)
   valid_idx <- !is.na(fitted_vals)
   pinball <- pinball_loss_mean(y_all[valid_idx], fitted_vals[valid_idx], mqbm_object$tau)
   mae_val <- mae(y_all[valid_idx], fitted_vals[valid_idx])
   pseudo_r2 <- quantile_pseudo_r2(y_all[valid_idx], fitted_vals[valid_idx], mqbm_object$tau)
-  
+
   # Get per-value training metrics
   value_metrics <- lapply(mqbm_object$multiplexer_values, function(val) {
     model <- mqbm_object$models[[val]]
-    
+
     list(
       n = mqbm_object$multiplexer_info[[val]]$n,
       n_train = if (!is.null(model$data_info$n_train)) model$data_info$n_train else model$data_info$n,
@@ -34,11 +34,11 @@
     )
   })
   names(value_metrics) <- mqbm_object$multiplexer_values
-  
+
   # Aggregate validation metrics if available
   val_overall <- NULL
   val_per_value <- NULL
-  
+
   if (has_validation) {
     val_per_value <- lapply(mqbm_object$multiplexer_values, function(val) {
       model <- mqbm_object$models[[val]]
@@ -56,10 +56,10 @@
       }
     })
     names(val_per_value) <- mqbm_object$multiplexer_values
-    
+
     # Remove NULLs (values without validation)
     val_per_value <- val_per_value[!sapply(val_per_value, is.null)]
-    
+
     # Compute weighted aggregate validation metrics
     if (length(val_per_value) > 0) {
       val_n <- sum(sapply(val_per_value, function(x) x$n_val))
@@ -83,7 +83,7 @@
         sapply(val_per_value, function(x) x$qce),
         sapply(val_per_value, function(x) x$n_val)
       )
-      
+
       val_overall <- list(
         n = val_n,
         pinball_loss = val_pinball,
@@ -94,7 +94,7 @@
       )
     }
   }
-  
+
   list(
     overall = list(
       pinball_loss = pinball,
@@ -116,17 +116,17 @@
   # Use type="surface" for raw quantile values in calibration metrics
   fitted_vals <- fitted(mqbm_object, type = "surface")
   y_all <- mqbm_object$training$y
-  
+
   # Overall calibration
   coverage <- mean(y_all <= fitted_vals, na.rm = TRUE)
   qce <- abs(coverage - mqbm_object$tau)
-  
+
   # Per-value calibration
   value_calibration <- lapply(mqbm_object$multiplexer_values, function(val) {
     idx <- mqbm_object$multiplexer_info[[val]]$indices
     y_val <- y_all[idx]
     fitted_val <- fitted_vals[idx]
-    
+
     cov <- mean(y_val <= fitted_val, na.rm = TRUE)
     list(
       coverage = cov,
@@ -134,11 +134,11 @@
     )
   })
   names(value_calibration) <- mqbm_object$multiplexer_values
-  
+
   # Calibration heterogeneity (variance in coverage across values)
   coverages <- vapply(value_calibration, function(x) x$coverage, numeric(1))
   coverage_sd <- stats::sd(coverages, na.rm = TRUE)
-  
+
   list(
     overall_coverage = coverage,
     overall_qce = qce,
@@ -158,12 +158,12 @@
   # Check if validation metrics are available
   has_validation <- !is.null(metrics_list$validation_per_value) &&
     length(metrics_list$validation_per_value) > 0
-  
+
   value_rows <- lapply(mqbm_object$multiplexer_values, function(val) {
     m <- metrics_list$per_value[[val]]
     c <- calibration_list$per_value[[val]]
     trees <- mqbm_object$models[[val]]$best_iter
-    
+
     base_cols <- tibble::tibble(
       value = val,
       n = m$n,
@@ -174,7 +174,7 @@
       train_cov = c$coverage,
       train_qce = c$qce
     )
-    
+
     # Add validation columns if available for this value
     if (has_validation && !is.null(metrics_list$validation_per_value[[val]])) {
       v <- metrics_list$validation_per_value[[val]]
@@ -184,10 +184,10 @@
       base_cols$val_cov <- v$coverage
       base_cols$val_qce <- v$qce
     }
-    
+
     base_cols
   })
-  
+
   dplyr::bind_rows(value_rows)
 }
 
@@ -207,13 +207,13 @@
     )
   })
   names(value_complexity) <- mqbm_object$multiplexer_values
-  
+
   # Aggregate
   total_trees <- sum(vapply(value_complexity, function(x) x$trees, numeric(1)))
   avg_trees <- mean(vapply(value_complexity, function(x) x$trees, numeric(1)))
   total_leaves <- sum(vapply(value_complexity, function(x) x$total_leaves, numeric(1)), na.rm = TRUE)
   avg_leaves_per_tree <- mean(vapply(value_complexity, function(x) x$avg_leaves, numeric(1)), na.rm = TRUE)
-  
+
   list(
     total_trees = total_trees,
     avg_trees_per_value = avg_trees,
@@ -263,12 +263,12 @@
 #'   cluster = sample(c("A", "B", "C"), 200, replace = TRUE)
 #' )
 #' df$y <- df$x1 * 0.5 + rnorm(200)
-#' 
+#'
 #' fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 50)
-#' 
+#'
 #' # Get summary
 #' summary(fit)
-#' 
+#'
 #' # Compact summary
 #' summary(fit, detailed = FALSE)
 #' }
@@ -279,18 +279,18 @@ summary.mqbm <- function(object, detailed = TRUE, top_features = 10, ...) {
   if (!inherits(object, "mqbm")) {
     stop("`object` must be an mqbm model.", call. = FALSE)
   }
-  
+
   # Aggregate metrics across values
   metrics <- .aggregate_value_metrics(object)
   calibration <- .aggregate_calibration(object)
   complexity <- .aggregate_complexity(object)
-  
+
   # Create per-value summary table
   value_table <- .compute_value_table(object, metrics, calibration)
-  
+
   # Get feature importance
   imp <- importance(object)
-  
+
   # Build summary object
   out <- list(
     tau = object$tau,
@@ -307,7 +307,7 @@ summary.mqbm <- function(object, detailed = TRUE, top_features = 10, ...) {
     detailed = detailed,
     top_features = top_features
   )
-  
+
   class(out) <- "mqbm_summary"
   out
 }
@@ -323,7 +323,7 @@ print.mqbm_summary <- function(x, ...) {
   if (!inherits(x, "mqbm_summary")) {
     stop("`x` must be an mqbm_summary object.", call. = FALSE)
   }
-  
+
   if (isTRUE(x$detailed)) {
     # Detailed output
     cat("Multiplexed Quantile Gradient Boosting Model\n")
@@ -332,12 +332,12 @@ print.mqbm_summary <- function(x, ...) {
     cat(" Values:           ", x$n_values, " (", paste(x$multiplexer_values, collapse = ", "), ")\n", sep = "")
     cat(" Tau:              ", format(x$tau, digits = 3), "\n", sep = "")
     cat(" Elapsed (s):      ", format(x$timings$elapsed, digits = 4), "\n\n", sep = "")
-    
+
     cat("Aggregate Training Metrics\n")
     cat(" Pinball loss:     ", format(x$metrics$overall$pinball_loss, digits = 4), "\n", sep = "")
     cat(" MAE:              ", format(x$metrics$overall$mae, digits = 4), "\n", sep = "")
     cat(" Pseudo-R2:        ", format(x$metrics$overall$pseudo_r2, digits = 4), "\n", sep = "")
-    
+
     if (!is.null(x$metrics$validation_overall)) {
       cat("\nAggregate Validation Metrics")
       cat(" (n=", x$metrics$validation_overall$n, ")", sep = "")
@@ -349,24 +349,28 @@ print.mqbm_summary <- function(x, ...) {
       cat(" QCE:              ", format(x$metrics$validation_overall$qce, digits = 4), "\n", sep = "")
     }
     cat("\n")
-    
+
     cat("Aggregate Calibration\n")
-    cat(" Coverage:         ", format(x$calibration$overall_coverage, digits = 4), 
-        " (target ", format(x$tau, digits = 3), ")\n", sep = "")
+    cat(" Coverage:         ", format(x$calibration$overall_coverage, digits = 4),
+      " (target ", format(x$tau, digits = 3), ")\n",
+      sep = ""
+    )
     cat(" QCE:              ", format(x$calibration$overall_qce, digits = 4), "\n", sep = "")
-    cat(" Coverage SD:      ", format(x$calibration$coverage_sd, digits = 4), 
-        " (heterogeneity)\n\n", sep = "")
-    
+    cat(" Coverage SD:      ", format(x$calibration$coverage_sd, digits = 4),
+      " (heterogeneity)\n\n",
+      sep = ""
+    )
+
     cat("Model Complexity\n")
     cat(" Total trees:      ", x$complexity$total_trees, "\n", sep = "")
     cat(" Avg trees/value:  ", format(x$complexity$avg_trees_per_value, digits = 1), "\n", sep = "")
     cat(" Total leaves:     ", format(x$complexity$total_leaves, big.mark = ","), "\n", sep = "")
     cat(" Avg leaves/tree:  ", format(x$complexity$avg_leaves_per_tree, digits = 3), "\n\n", sep = "")
-    
+
     cat("Per-Value Summary\n")
     print(x$value_table, n = Inf)
     cat("\n")
-    
+
     if (!is.null(x$importance) && nrow(x$importance) > 0) {
       cat("Feature Importance (Top ", x$top_features, ")\n", sep = "")
       top_imp <- utils::head(x$importance, x$top_features)
@@ -374,7 +378,6 @@ print.mqbm_summary <- function(x, ...) {
     } else {
       cat("No feature importance available.\n")
     }
-    
   } else {
     # Compact output
     cat("Multiplexed Quantile Gradient Boosting Model\n")
@@ -383,22 +386,24 @@ print.mqbm_summary <- function(x, ...) {
     cat(" Pinball loss:     ", format(x$metrics$overall$pinball_loss, digits = 4), "\n", sep = "")
     cat(" MAE:              ", format(x$metrics$overall$mae, digits = 4), "\n", sep = "")
     cat(" Pseudo-R2:        ", format(x$metrics$overall$pseudo_r2, digits = 4), "\n", sep = "")
-    cat(" Coverage:         ", format(x$calibration$overall_coverage, digits = 4), 
-        " | QCE: ", format(x$calibration$overall_qce, digits = 4), "\n", sep = "")
+    cat(" Coverage:         ", format(x$calibration$overall_coverage, digits = 4),
+      " | QCE: ", format(x$calibration$overall_qce, digits = 4), "\n",
+      sep = ""
+    )
     cat("\n")
-    
+
     cat("Per-Value Summary\n")
     print(x$value_table, n = Inf)
     cat("\n")
-    
+
     if (!is.null(x$importance) && nrow(x$importance) > 0) {
       cat("Top Features:\n")
       top_imp <- utils::head(x$importance, min(5, x$top_features))
       print(top_imp[, c("feature", "gain", "sd_gain")], n = Inf)
     }
-    
+
     cat("\n(Use detailed = TRUE for full report)\n")
   }
-  
+
   invisible(x)
 }

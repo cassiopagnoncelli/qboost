@@ -299,13 +299,15 @@ plot.qtail <- function(x,
   pit_vals <- pit_vals[is.finite(pit_vals)]
 
   if (length(pit_vals) < 10) {
-    return(ggplot2::ggplot() +
-             ggplot2::annotate("text",
-               x = 0.5, y = 0.5,
-               label = "Insufficient PIT values",
-               size = 6
-             ) +
-             ggplot2::theme_void())
+    return(
+      ggplot2::ggplot() +
+        ggplot2::annotate("text",
+          x = 0.5, y = 0.5,
+          label = "Insufficient PIT values",
+          size = 6
+        ) +
+        ggplot2::theme_void()
+    )
   }
 
   # Create histogram
@@ -337,13 +339,15 @@ plot.qtail <- function(x,
   e_exc <- e[e > 0 & is.finite(e)]
 
   if (length(e_exc) < 5) {
-    return(ggplot2::ggplot() +
-             ggplot2::annotate("text",
-               x = 0.5, y = 0.5,
-               label = "Insufficient exceedances for QQ plot",
-               size = 6
-             ) +
-             ggplot2::theme_void())
+    return(
+      ggplot2::ggplot() +
+        ggplot2::annotate("text",
+          x = 0.5, y = 0.5,
+          label = "Insufficient exceedances for QQ plot",
+          size = 6
+        ) +
+        ggplot2::theme_void()
+    )
   }
 
   # Sort empirical exceedances

@@ -17,8 +17,10 @@ train_idx <- 1:70
 val_idx <- 71:100
 
 # Fit with train/val split
-fit <- qbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 50,
-           train_idx = train_idx, val_idx = val_idx)
+fit <- qbm(y ~ x1 + x2,
+  data = df, tau = 0.5, nrounds = 50,
+  train_idx = train_idx, val_idx = val_idx
+)
 
 cat("Model summary:\n")
 summary(fit)
@@ -38,8 +40,10 @@ train_idx_global <- 1:140
 val_idx_global <- 141:200
 
 # Fit mqbm with train/val split
-fit_mqbm <- mqbm(y ~ x1 + x2, data = df_multi, tau = 0.5, nrounds = 50,
-                 train_idx = train_idx_global, val_idx = val_idx_global)
+fit_mqbm <- mqbm(y ~ x1 + x2,
+  data = df_multi, tau = 0.5, nrounds = 50,
+  train_idx = train_idx_global, val_idx = val_idx_global
+)
 
 cat("MQBM summary with train/val metrics:\n")
 summary(fit_mqbm)

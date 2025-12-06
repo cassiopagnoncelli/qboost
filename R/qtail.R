@@ -374,8 +374,8 @@
 #' predict(fit_upper, newdata)
 #'
 #' # Access GPD parameters
-#' fit_upper$evt$xi     # Shape parameter
-#' fit_upper$evt$beta   # Scale parameter
+#' fit_upper$evt$xi # Shape parameter
+#' fit_upper$evt$beta # Scale parameter
 #'
 #' # Matrix interface
 #' X <- as.matrix(df[, c("x1", "x2")])

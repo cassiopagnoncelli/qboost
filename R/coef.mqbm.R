@@ -16,12 +16,12 @@ coef.mqbm <- function(object, ...) {
   if (!inherits(object, "mqbm")) {
     stop("`object` must be a mqbm model.", call. = FALSE)
   }
-  
+
   # Extract feature importance from each group-specific model
   coefs <- lapply(object$multiplexer_values, function(val) {
     coef(object$models[[val]], ...)
   })
   names(coefs) <- object$multiplexer_values
-  
+
   coefs
 }

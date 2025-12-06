@@ -67,8 +67,10 @@ print.mqtail_summary <- function(x, ...) {
   cat("Per-Value GPD Parameters:\n")
   for (val in x$multiplexer_values) {
     summ <- x$value_summaries[[val]]
-    cat(sprintf("  %s: exc=%d, xi=%.3f, beta=%.3f\n",
-                val, summ$n_exceedances, summ$gpd_xi, summ$gpd_beta))
+    cat(sprintf(
+      "  %s: exc=%d, xi=%.3f, beta=%.3f\n",
+      val, summ$n_exceedances, summ$gpd_xi, summ$gpd_beta
+    ))
   }
 
   invisible(x)

@@ -126,7 +126,7 @@ print.qbm_summary <- function(x, ...) {
     cat(" Pseudo-R2:        ", format(x$metrics$pseudo_r2, digits = 4), "\n", sep = "")
     cat(" Coverage:         ", format(x$calibration$coverage, digits = 4), "\n", sep = "")
     cat(" QCE:              ", format(x$calibration$qce, digits = 4), "\n", sep = "")
-    
+
     if (!is.null(x$validation)) {
       cat("\nValidation metrics")
       if (!is.null(x$data_info$n_val) && x$data_info$n_val > 0) {

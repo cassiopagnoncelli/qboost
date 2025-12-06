@@ -12,7 +12,7 @@
 #'   \item{gain}{Average information gain across all group models}
 #'   \item{sd_gain}{Standard deviation of information gain across groups}
 #'   \item{n_models}{Number of group models where this feature appears}
-#'   
+#'
 #' @details
 #' For each feature, this function:
 #' \enumerate{
@@ -21,7 +21,7 @@
 #'   \item Computes the standard deviation of information gain
 #'   \item Counts how many group models use this feature
 #' }
-#' 
+#'
 #' Features are ranked by mean information gain in descending order.
 #' Features that don't appear in all group models will have their gain
 #' treated as 0 for those models when computing statistics.
@@ -38,9 +38,9 @@
 #'   cluster = sample(c("A", "B", "C"), 200, replace = TRUE)
 #' )
 #' df$y <- df$x1 * 0.5 + df$x2 * 0.3 + rnorm(200)
-#' 
+#'
 #' fit <- mqbm(y ~ x1 + x2 + x3, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 50)
-#' 
+#'
 #' # Get aggregated feature importance
 #' importance(fit)
 #' }
@@ -50,7 +50,7 @@ importance.mqbm <- function(object, ...) {
   if (!inherits(object, "mqbm")) {
     stop("`object` must be a mqbm model.", call. = FALSE)
   }
-  
+
   # Extract importance from each group-specific model
   imp_list <- lapply(object$multiplexer_values, function(val) {
     imp <- importance(object$models[[val]], ...)
@@ -60,10 +60,10 @@ importance.mqbm <- function(object, ...) {
     imp$group <- val
     imp
   })
-  
+
   # Remove NULL entries (if any model has no importance)
   imp_list <- imp_list[!vapply(imp_list, is.null, logical(1))]
-  
+
   if (length(imp_list) == 0) {
     return(tibble::tibble(
       feature = character(),
@@ -72,22 +72,22 @@ importance.mqbm <- function(object, ...) {
       n_models = integer()
     ))
   }
-  
+
   # Combine all importance tables
   imp_combined <- dplyr::bind_rows(imp_list)
-  
+
   # Get all unique features across all models
   all_features <- unique(imp_combined$feature)
-  
+
   # For each feature, compute mean and sd of gain across groups
   result <- lapply(all_features, function(feat) {
     # Get gains for this feature from all groups
     feat_gains <- imp_combined[imp_combined$feature == feat, ]
-    
+
     # Create a vector with one gain per group (0 if feature not present)
     gains_by_group <- numeric(length(object$multiplexer_values))
     names(gains_by_group) <- object$multiplexer_values
-    
+
     for (i in seq_along(object$multiplexer_values)) {
       val <- object$multiplexer_values[i]
       # Extract gain as a numeric value
@@ -98,7 +98,7 @@ importance.mqbm <- function(object, ...) {
         gains_by_group[val] <- 0
       }
     }
-    
+
     tibble::tibble(
       feature = feat,
       gain = mean(gains_by_group, na.rm = TRUE),
@@ -106,10 +106,10 @@ importance.mqbm <- function(object, ...) {
       n_models = sum(gains_by_group > 0)
     )
   })
-  
+
   # Combine and sort by gain
   result_df <- dplyr::bind_rows(result)
   result_df <- dplyr::arrange(result_df, dplyr::desc(gain))
-  
+
   result_df
 }

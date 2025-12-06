@@ -24,16 +24,26 @@ val_idx <- which(df$group %in% c("A", "B", "C", "E") & !(seq_len(n) %in% train_i
 cat("Train/val distribution:\n")
 cat("  Train groups:", paste(unique(df$group[train_idx]), collapse = ", "), "\n")
 cat("  Val groups:", paste(unique(df$group[val_idx]), collapse = ", "), "\n")
-cat("  Group A in train:", sum(df$group[train_idx] == "A"), 
-    ", in val:", sum(df$group[val_idx] == "A"), "\n")
-cat("  Group B in train:", sum(df$group[train_idx] == "B"), 
-    ", in val:", sum(df$group[val_idx] == "B"), "\n")
-cat("  Group C in train:", sum(df$group[train_idx] == "C"), 
-    ", in val:", sum(df$group[val_idx] == "C"), "\n")
-cat("  Group D in train:", sum(df$group[train_idx] == "D"), 
-    ", in val:", sum(df$group[val_idx] == "D"), "\n")
-cat("  Group E in train:", sum(df$group[train_idx] == "E"), 
-    ", in val:", sum(df$group[val_idx] == "E"), "\n\n")
+cat(
+  "  Group A in train:", sum(df$group[train_idx] == "A"),
+  ", in val:", sum(df$group[val_idx] == "A"), "\n"
+)
+cat(
+  "  Group B in train:", sum(df$group[train_idx] == "B"),
+  ", in val:", sum(df$group[val_idx] == "B"), "\n"
+)
+cat(
+  "  Group C in train:", sum(df$group[train_idx] == "C"),
+  ", in val:", sum(df$group[val_idx] == "C"), "\n"
+)
+cat(
+  "  Group D in train:", sum(df$group[train_idx] == "D"),
+  ", in val:", sum(df$group[val_idx] == "D"), "\n"
+)
+cat(
+  "  Group E in train:", sum(df$group[train_idx] == "E"),
+  ", in val:", sum(df$group[val_idx] == "E"), "\n\n"
+)
 
 cat("=== Fitting mqtail ===\n")
 fit <- mqtail(
@@ -45,7 +55,7 @@ fit <- mqtail(
   tail = "upper",
   taus = c(0.9, 0.95),
   threshold_tau = 0.95,
-  params = list(nrounds = 50, nfolds = 3),  # Remove early_stopping_rounds to allow k-fold CV
+  params = list(nrounds = 50, nfolds = 3), # Remove early_stopping_rounds to allow k-fold CV
   verbose = TRUE
 )
 

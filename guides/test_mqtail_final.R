@@ -51,11 +51,14 @@ print(data.frame(cluster = newdata$cluster, prediction = preds))
 cat("\n=== Error Handling ===\n")
 df_bad <- df
 df_bad$cluster <- NULL
-tryCatch({
-  mqtail(y ~ x1 + x2, data = df_bad, multi = "cluster", params = list(nrounds = 10))
-  cat("ERROR: Should have failed\n")
-}, error = function(e) {
-  cat("✓ Correctly caught error:", conditionMessage(e), "\n")
-})
+tryCatch(
+  {
+    mqtail(y ~ x1 + x2, data = df_bad, multi = "cluster", params = list(nrounds = 10))
+    cat("ERROR: Should have failed\n")
+  },
+  error = function(e) {
+    cat("✓ Correctly caught error:", conditionMessage(e), "\n")
+  }
+)
 
 cat("\n✓ All tests passed! mqtail fully functional with new architecture.\n")

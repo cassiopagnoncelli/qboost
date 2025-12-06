@@ -13,10 +13,12 @@ df <- data.frame(
 
 # Each group has different relationship with y
 df$y <- ifelse(df$symbol == "AAPL",
-               df$x1 * 2.0 + df$x2 * 0.5 + rnorm(n, sd = 0.5),
-               ifelse(df$symbol == "GOOGL",
-                      df$x1 * 0.5 + df$x2 * 2.0 + rnorm(n, sd = 0.5),
-                      df$x1 * 1.0 + df$x2 * 1.0 + rnorm(n, sd = 0.5)))
+  df$x1 * 2.0 + df$x2 * 0.5 + rnorm(n, sd = 0.5),
+  ifelse(df$symbol == "GOOGL",
+    df$x1 * 0.5 + df$x2 * 2.0 + rnorm(n, sd = 0.5),
+    df$x1 * 1.0 + df$x2 * 1.0 + rnorm(n, sd = 0.5)
+  )
+)
 
 # Split data
 train_idx <- sample(1:n, size = floor(0.7 * n))
@@ -66,8 +68,10 @@ cat("Range:", range(fitted_vals), "\n")
 cat("\nIndividual models per group:\n")
 for (sym in fit$multiplexer_values) {
   model <- fit$models[[sym]]
-  cat(sprintf("  %s: %d trees, %d observations\n",
-              sym, model$best_iter, fit$multiplexer_info[[sym]]$n))
+  cat(sprintf(
+    "  %s: %d trees, %d observations\n",
+    sym, model$best_iter, fit$multiplexer_info[[sym]]$n
+  ))
 }
 
 # ------------------------------------------------------------------
@@ -78,8 +82,10 @@ for (sym in fit$multiplexer_values) {
   sym_idx <- which(test_df$symbol == sym)
   if (length(sym_idx) > 0) {
     sym_preds <- preds1[sym_idx]
-    cat(sprintf("  %s: mean=%.3f, sd=%.3f, n=%d\n",
-                sym, mean(sym_preds), sd(sym_preds), length(sym_idx)))
+    cat(sprintf(
+      "  %s: mean=%.3f, sd=%.3f, n=%d\n",
+      sym, mean(sym_preds), sd(sym_preds), length(sym_idx)
+    ))
   }
 }
 
@@ -100,7 +106,7 @@ df2$y <- df2$x1 * 0.5 + rnorm(200)
 fit2 <- mqbm(
   y ~ x1 + x2,
   data = df2,
-  multiplexer = "group",  # Use "group" instead of default "symbol"
+  multiplexer = "group", # Use "group" instead of default "symbol"
   tau = 0.5,
   nrounds = 50,
   nfolds = 3

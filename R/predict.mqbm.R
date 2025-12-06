@@ -12,7 +12,7 @@
 #'   as a separate argument.
 #' @param multiplexer Optional character vector specifying which group-specific model
 #'   to use for each row of \code{newdata}. If \code{NULL} (default), the
-#'   function looks for a column named \code{object$multiplexer} in \code{newdata}. 
+#'   function looks for a column named \code{object$multiplexer} in \code{newdata}.
 #'   Must contain only groups that were present in the training data.
 #' @param type Character string specifying the type of prediction. Either \code{"surface"}
 #'   for raw quantile predictions (default) or \code{"quantile"} for ECDF-transformed
@@ -86,7 +86,7 @@ predict.mqbm <- function(object, newdata, multiplexer = NULL, type = c("surface"
 
   # Get the multiplexer column name from the object
   multiplexer_colname <- object$multiplexer
-  
+
   # Extract multiplexer from newdata or use provided multiplexer argument
   if (is.null(multiplexer)) {
     # Try to find the column in newdata
@@ -97,15 +97,19 @@ predict.mqbm <- function(object, newdata, multiplexer = NULL, type = c("surface"
         newdata_for_pred <- newdata[, names(newdata) != multiplexer_colname, drop = FALSE]
       } else {
         stop(
-          sprintf("`%s` must be provided either as a column in `newdata` or as a separate argument.",
-                  multiplexer_colname),
+          sprintf(
+            "`%s` must be provided either as a column in `newdata` or as a separate argument.",
+            multiplexer_colname
+          ),
           call. = FALSE
         )
       }
     } else {
       stop(
-        sprintf("`%s` must be provided either as a column in `newdata` or as a separate argument.",
-                multiplexer_colname),
+        sprintf(
+          "`%s` must be provided either as a column in `newdata` or as a separate argument.",
+          multiplexer_colname
+        ),
         call. = FALSE
       )
     }
@@ -113,7 +117,7 @@ predict.mqbm <- function(object, newdata, multiplexer = NULL, type = c("surface"
     multiplexer <- as.character(multiplexer)
     newdata_for_pred <- newdata
   }
-  
+
   # Use 'group_vals' as the internal variable name
   group_vals <- multiplexer
 
@@ -123,7 +127,7 @@ predict.mqbm <- function(object, newdata, multiplexer = NULL, type = c("surface"
   } else {
     length(newdata_for_pred)
   }
-  
+
   if (length(group_vals) != n_rows) {
     stop("`multiplexer` length must match the number of rows in `newdata`.", call. = FALSE)
   }
@@ -131,8 +135,10 @@ predict.mqbm <- function(object, newdata, multiplexer = NULL, type = c("surface"
   # Check for unknown groups
   unknown_groups <- setdiff(unique(group_vals), object$multiplexer_values)
   if (length(unknown_groups) > 0) {
-    stop("Unknown groups in prediction data: ", paste(unknown_groups, collapse = ", "), 
-         "\nAvailable groups: ", paste(object$multiplexer_values, collapse = ", "), call. = FALSE)
+    stop("Unknown groups in prediction data: ", paste(unknown_groups, collapse = ", "),
+      "\nAvailable groups: ", paste(object$multiplexer_values, collapse = ", "),
+      call. = FALSE
+    )
   }
 
   # Process newdata according to preprocess type
@@ -171,14 +177,15 @@ predict.mqbm <- function(object, newdata, multiplexer = NULL, type = c("surface"
   if (is.matrix(newdata_matrix)) {
     feature_names <- colnames(newdata_matrix)
     newdata_matrix <- matrix(as.numeric(newdata_matrix),
-                             nrow = nrow(newdata_matrix),
-                             ncol = ncol(newdata_matrix))
+      nrow = nrow(newdata_matrix),
+      ncol = ncol(newdata_matrix)
+    )
     colnames(newdata_matrix) <- feature_names
   }
 
   # Initialize predictions vector
   predictions <- numeric(length(group_vals))
-  
+
   # Predict for each group using its corresponding model
   for (val in object$multiplexer_values) {
     idx <- which(group_vals == val)
@@ -186,7 +193,7 @@ predict.mqbm <- function(object, newdata, multiplexer = NULL, type = c("surface"
       x_val <- newdata_matrix[idx, , drop = FALSE]
       # Get raw predictions from the qbm model
       raw_preds <- predict(object$models[[val]], x_val, ...)
-      
+
       # Apply transformation based on type
       if (type == "quantile") {
         # Transform through group-specific ECDF to get probabilities

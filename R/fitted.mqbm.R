@@ -17,19 +17,19 @@ fitted.mqbm <- function(object, type = c("surface", "quantile"), ...) {
   if (!inherits(object, "mqbm")) {
     stop("`object` must be a mqbm model.", call. = FALSE)
   }
-  
+
   # Match and validate type argument
   type <- match.arg(type)
-  
+
   # Initialize fitted values vector with same length as training data
   fitted_vals <- numeric(object$data_info$n)
-  
+
   # Get fitted values from each group-specific model
   for (val in object$multiplexer_values) {
     idx <- object$multiplexer_info[[val]]$indices
     # Get raw fitted values from qbm model
     raw_fitted <- object$models[[val]]$training$fitted
-    
+
     # Apply transformation based on type
     if (type == "quantile") {
       # Transform through group-specific ECDF
@@ -39,6 +39,6 @@ fitted.mqbm <- function(object, type = c("surface", "quantile"), ...) {
       fitted_vals[idx] <- raw_fitted
     }
   }
-  
+
   fitted_vals
 }

@@ -34,6 +34,6 @@ fitted.qbm <- function(object, ...) {
   if (!inherits(object, "qbm")) {
     stop("`object` must be a qbm model.", call. = FALSE)
   }
-  
+
   object$training$fitted
 }
