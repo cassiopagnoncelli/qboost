@@ -17,15 +17,11 @@ residuals.mqtail <- function(object, ...) {
     stop("`object` must be a mqtail model.", call. = FALSE)
   }
 
-  # Initialize residuals vector with same length as training data
-  residuals_vals <- numeric(object$data_info$n)
-
-  # Get residuals from each symbol-specific model
-  for (sym in object$symbols) {
-    idx <- object$symbol_info[[sym]]$indices
-    # Get residuals from qtail model
-    residuals_vals[idx] <- residuals(object$models[[sym]])
-  }
-
-  residuals_vals
+  # Get fitted values and observed y from the threshold model
+  thresh_mqbm <- object$mqbm_models[[as.character(object$threshold_tau)]]
+  fitted_vals <- fitted(thresh_mqbm, type = "surface")
+  y_vals <- thresh_mqbm$training$y
+  
+  # Compute residuals
+  y_vals - fitted_vals
 }

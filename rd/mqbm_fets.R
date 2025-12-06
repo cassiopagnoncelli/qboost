@@ -62,7 +62,7 @@ qXY$symbol <- NULL
 # Fit model
 fit <- mqbm(
   y ~ .,
-  multi = "cluster",
+  multiplexer = "cluster",
   data = qXY,
   train_idx = train_idx,
   val_idx = val_idx,

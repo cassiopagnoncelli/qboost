@@ -1,8 +1,8 @@
-# Demo: Symbol-based Quantile Boosting Model (mqbm)
+# Demo: Multiplexed Quantile Boosting Model (mqbm)
 
 devtools::load_all()
 
-# Create sample data with multiple symbols
+# Create sample data with multiple groups
 set.seed(123)
 n <- 3000
 df <- data.frame(
@@ -11,7 +11,7 @@ df <- data.frame(
   symbol = sample(c("AAPL", "GOOGL", "MSFT"), n, replace = TRUE)
 )
 
-# Each symbol has different relationship with y
+# Each group has different relationship with y
 df$y <- ifelse(df$symbol == "AAPL",
                df$x1 * 2.0 + df$x2 * 0.5 + rnorm(n, sd = 0.5),
                ifelse(df$symbol == "GOOGL",
@@ -29,6 +29,7 @@ test_df <- df[-train_idx, ]
 cat("Training mqbm model...\n")
 fit <- mqbm(
   y ~ x1 + x2,
+  multiplexer = "symbol",
   data = train_df,
   tau = 0.5,
   nrounds = 100,
@@ -43,11 +44,11 @@ print(fit)
 # ------------------------------------------------------------------
 cat("\n\nMaking predictions...\n")
 
-# Method 1: symbol column in newdata
+# Method 1: multiplexer column in newdata
 preds1 <- predict(fit, test_df)
 
-# Method 2: separate symbol argument
-preds2 <- predict(fit, test_df[, c("x1", "x2")], symbol = test_df$symbol)
+# Method 2: separate multiplexer argument
+preds2 <- predict(fit, test_df[, c("x1", "x2")], multiplexer = test_df$symbol)
 
 cat("Predictions match:", all(preds1 == preds2), "\n")
 
@@ -60,20 +61,20 @@ cat("Length:", length(fitted_vals), "\n")
 cat("Range:", range(fitted_vals), "\n")
 
 # ------------------------------------------------------------------
-# Model per symbol
+# Model per group
 # ------------------------------------------------------------------
-cat("\nIndividual models per symbol:\n")
-for (sym in fit$symbols) {
+cat("\nIndividual models per group:\n")
+for (sym in fit$multiplexer_values) {
   model <- fit$models[[sym]]
   cat(sprintf("  %s: %d trees, %d observations\n",
-              sym, model$best_iter, fit$symbol_info[[sym]]$n))
+              sym, model$best_iter, fit$multiplexer_info[[sym]]$n))
 }
 
 # ------------------------------------------------------------------
-# Compare predictions across symbols
+# Compare predictions across groups
 # ------------------------------------------------------------------
 cat("\nPrediction comparison:\n")
-for (sym in fit$symbols) {
+for (sym in fit$multiplexer_values) {
   sym_idx <- which(test_df$symbol == sym)
   if (length(sym_idx) > 0) {
     sym_preds <- preds1[sym_idx]
@@ -83,9 +84,9 @@ for (sym in fit$symbols) {
 }
 
 # ------------------------------------------------------------------
-# Custom multi parameter example
+# Custom multiplexer parameter example
 # ------------------------------------------------------------------
-cat("\n\nCustom multi parameter example:\n")
+cat("\n\nCustom multiplexer parameter example:\n")
 
 # Create data with a different grouping column
 df2 <- data.frame(
@@ -95,18 +96,18 @@ df2 <- data.frame(
 )
 df2$y <- df2$x1 * 0.5 + rnorm(200)
 
-# Train with custom multi parameter
+# Train with custom multiplexer parameter
 fit2 <- mqbm(
   y ~ x1 + x2,
   data = df2,
-  multi = "group",  # Use "group" instead of default "symbol"
+  multiplexer = "group",  # Use "group" instead of default "symbol"
   tau = 0.5,
   nrounds = 50,
   nfolds = 3
 )
 
-cat("Multi parameter used:", fit2$multi, "\n")
-cat("Groups:", paste(fit2$symbols, collapse = ", "), "\n")
+cat("Multiplexer parameter used:", fit2$multiplexer, "\n")
+cat("Groups:", paste(fit2$multiplexer_values, collapse = ", "), "\n")
 
 # Predictions work with the group column
 newdata <- data.frame(

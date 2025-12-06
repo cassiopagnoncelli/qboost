@@ -10,20 +10,20 @@ print.mqbm <- function(x, ...) {
     stop("`x` must be a mqbm model.", call. = FALSE)
   }
 
-  multi_name <- if (!is.null(x$multi)) x$multi else "symbol"
+  multiplexer_name <- if (!is.null(x$multiplexer)) x$multiplexer else "multiplexer"
   
-  cat("Symbol-based Quantile Gradient Boosting Model\n")
+  cat("Multiplexed Quantile Gradient Boosting Model\n")
   cat(" Data:             ", x$data_info$n, " rows, ", x$data_info$p, " cols\n", sep = "")
   cat(" Elapsed (s):      ", format(x$timings$elapsed, digits = 4), "\n", sep = "")
   cat(" Tau:              ", format(x$tau, digits = 3), "\n", sep = "")
-  cat(" Multi:            ", multi_name, "\n", sep = "")
-  cat(" Symbols:          ", x$data_info$n_symbols, " (", paste(x$symbols, collapse = ", "), ")\n", sep = "")
+  cat(" Multiplexer:      ", multiplexer_name, "\n", sep = "")
+  cat(" Values:           ", x$data_info$n_multiplexer, " (", paste(x$multiplexer_values, collapse = ", "), ")\n", sep = "")
   
-  cat("\nModels per symbol:\n")
-  for (sym in x$symbols) {
-    n_sym <- x$symbol_info[[sym]]$n
-    trees <- x$models[[sym]]$best_iter
-    cat("  ", sym, ": n=", n_sym, ", trees=", trees, "\n", sep = "")
+  cat("\nModels per value:\n")
+  for (val in x$multiplexer_values) {
+    n_val <- x$multiplexer_info[[val]]$n
+    trees <- x$models[[val]]$best_iter
+    cat("  ", val, ": n=", n_val, ", trees=", trees, "\n", sep = "")
   }
   
   invisible(x)

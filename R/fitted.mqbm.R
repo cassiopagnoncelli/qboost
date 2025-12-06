@@ -1,6 +1,6 @@
 #' Fitted values method for mqbm
 #'
-#' Returns the fitted values from training for each symbol-specific model.
+#' Returns the fitted values from training for each group-specific model.
 #' Can return either raw quantile predictions or ECDF-transformed probabilities.
 #'
 #' @param object A mqbm object
@@ -24,16 +24,16 @@ fitted.mqbm <- function(object, type = c("surface", "quantile"), ...) {
   # Initialize fitted values vector with same length as training data
   fitted_vals <- numeric(object$data_info$n)
   
-  # Get fitted values from each symbol-specific model
-  for (sym in object$symbols) {
-    idx <- object$symbol_info[[sym]]$indices
+  # Get fitted values from each group-specific model
+  for (val in object$multiplexer_values) {
+    idx <- object$multiplexer_info[[val]]$indices
     # Get raw fitted values from qbm model
-    raw_fitted <- object$models[[sym]]$training$fitted
+    raw_fitted <- object$models[[val]]$training$fitted
     
     # Apply transformation based on type
     if (type == "quantile") {
-      # Transform through symbol-specific ECDF
-      fitted_vals[idx] <- object$ecdf_funs[[sym]](raw_fitted)
+      # Transform through group-specific ECDF
+      fitted_vals[idx] <- object$ecdf_funs[[val]](raw_fitted)
     } else {
       # Return raw surface fitted values
       fitted_vals[idx] <- raw_fitted

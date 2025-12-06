@@ -1,11 +1,11 @@
 #' Extract GPD tail parameters from mqtail model
 #'
-#' Returns the Generalized Pareto Distribution (GPD) parameters for each symbol.
+#' Returns the Generalized Pareto Distribution (GPD) parameters for each multiplexer value.
 #'
 #' @param object A fitted mqtail model object.
 #' @param ... Additional arguments (unused).
 #'
-#' @return A data.frame with GPD parameters (xi, beta) for each symbol.
+#' @return A data.frame with GPD parameters (xi, beta) for each multiplexer value.
 #'
 #' @seealso \code{\link{mqtail}}, \code{\link{tail_params.qtail}}
 #'
@@ -15,11 +15,11 @@ coef.mqtail <- function(object, ...) {
     stop("`object` must be a mqtail model.", call. = FALSE)
   }
 
-  # Extract GPD parameters from each symbol
-  params_list <- lapply(object$symbols, function(sym) {
-    evt <- object$models[[sym]]$evt
+  # Extract GPD parameters from each multiplexer value
+  params_list <- lapply(object$multiplexer_values, function(val) {
+    evt <- object$evt_models[[val]]
     data.frame(
-      symbol = sym,
+      value = val,
       xi = evt$xi,
       beta = evt$beta,
       n_exceedances = evt$n_exceedances,

@@ -61,11 +61,6 @@ qXY$cluster <- km$cluster[match(qXY$symbol, grouping_metrics$symbol)]
 qXY$symbol <- NULL
 
 # Training mqtail model
-# Note: mqtail fits multiple qbm models per symbol (taus × n_symbols)
-# With 60 symbols and 4 taus = 240 qbm models - this will take time!
-cat("Training mqtail model for", length(unique(qXY$symbol)), "symbols...\n")
-cat("This will fit", length(c(0.95, 0.97, 0.99, 0.995)), "× symbols qbm models\n")
-
 fit <- mqtail(
   y ~ .,
   multi = "cluster",

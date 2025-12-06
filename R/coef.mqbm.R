@@ -1,12 +1,12 @@
 #' Extract coefficients from a mqbm model
 #'
-#' Returns feature importance for each symbol-specific model within the mqbm object.
+#' Returns feature importance for each group-specific model within the mqbm object.
 #'
 #' @param object A fitted mqbm model object returned by \code{\link{mqbm}}.
 #' @param ... Additional arguments (currently unused).
 #'
-#' @return A named list of tibbles, one per symbol, containing feature importances
-#'   for each symbol-specific model. Returns \code{NULL} if feature importance
+#' @return A named list of tibbles, one per group, containing feature importances
+#'   for each group-specific model. Returns \code{NULL} if feature importance
 #'   is not available.
 #'
 #' @seealso \code{\link{mqbm}}, \code{\link{coef.qbm}}
@@ -17,11 +17,11 @@ coef.mqbm <- function(object, ...) {
     stop("`object` must be a mqbm model.", call. = FALSE)
   }
   
-  # Extract feature importance from each symbol-specific model
-  coefs <- lapply(object$symbols, function(sym) {
-    coef(object$models[[sym]], ...)
+  # Extract feature importance from each group-specific model
+  coefs <- lapply(object$multiplexer_values, function(val) {
+    coef(object$models[[val]], ...)
   })
-  names(coefs) <- object$symbols
+  names(coefs) <- object$multiplexer_values
   
   coefs
 }

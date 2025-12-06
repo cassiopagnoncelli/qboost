@@ -1,46 +1,38 @@
-#' Fit symbol-based (multi-group) extreme tail quantile models
+#' Fit multi-group extreme tail quantile models
 #'
-#' Trains separate \code{\link{qtail}} extreme quantile models for each symbol
-#' (group/label) in the data. This symbol-based multiplexer enables heterogeneous
-#' tail modeling where different subgroups can have distinct tail behavior.
+#' Trains multiple \code{\link{mqbm}} quantile models (one per tau), then fits
+#' GPD tail models per group. This enables extreme quantile prediction with
+#' heterogeneous tail behavior across groups.
 #'
-#' @param ... Either a formula with \code{data} argument (where \code{data} must
-#'   contain a column specified by \code{multi} identifying groups), or an
-#'   \code{x}/\code{y}/\code{multi} triplet for matrix input.
-#' @param multi Character string specifying the column name in \code{data} (for formula interface)
-#'   or the name of the grouping variable to use as a multiplexer. Default is \code{"symbol"}.
-#' @param taus Numeric vector of quantile levels to fit with \code{\link{qbm}}.
-#'   If \code{NULL}, defaults based on \code{tail} direction.
-#' @param tail Character string specifying tail direction: \code{"upper"} or \code{"lower"}.
-#'   Default is \code{"upper"}.
-#' @param threshold_tau Numeric quantile level defining the EVT threshold.
+#' @param ... Passed to \code{\link{mqbm}}.
+#' @param multiplexer Character string specifying the column name for grouping.
+#'   Passed directly to \code{\link{mqbm}}. Required parameter.
+#' @param taus Numeric vector of quantile levels. If \code{NULL}, defaults
+#'   based on \code{tail} direction.
+#' @param tail Character string: \code{"upper"} or \code{"lower"}. Default is \code{"upper"}.
+#' @param threshold_tau Quantile level for EVT threshold. Must be in \code{taus}.
 #'   If \code{NULL}, defaults to 0.99 for upper tail or 0.01 for lower tail.
-#' @param params Named list of parameters passed to \code{\link{qtail}} for each symbol.
-#' @param verbose Logical; if \code{TRUE}, prints progress messages. Default is \code{FALSE}.
-#' @param train_idx Optional integer vector of training indices (referring to full dataset rows).
-#' @param val_idx Optional integer vector of validation indices (referring to full dataset rows).
-#' @param folds Optional list of integer vectors specifying custom fold structure for CV.
+#' @param params Named list of parameters for \code{\link{qbm}} models.
+#' @param verbose Logical; print progress messages. Default is \code{FALSE}.
+#' @param train_idx Optional training indices. Passed to \code{\link{mqbm}}.
+#' @param val_idx Optional validation indices. Passed to \code{\link{mqbm}}.
+#' @param folds Optional fold structure. Passed to \code{\link{mqbm}}.
 #'
-#' @return An object of class \code{mqtail} containing:
-#'   \item{models}{Named list of fitted \code{\link{qtail}} objects, one per symbol}
-#'   \item{symbols}{Character vector of unique symbol identifiers}
-#'   \item{symbol_info}{List with sample size and indices for each symbol}
-#'   \item{ecdf_funs}{Named list of ECDF functions, one per symbol}
-#'   \item{taus}{Vector of fitted quantile levels}
+#' @return Object of class \code{mqtail} containing:
+#'   \item{mqbm_models}{Named list of \code{\link{mqbm}} objects, one per tau}
+#'   \item{multiplexer_values}{Unique group identifiers from first mqbm model}
+#'   \item{multiplexer_info}{Info per group from first mqbm model}
+#'   \item{evt_models}{GPD parameters per group}
+#'   \item{taus}{Fitted quantile levels}
 #'   \item{tau_target}{Target extreme quantile}
-#'   \item{threshold_tau}{EVT threshold quantile level}
+#'   \item{threshold_tau}{EVT threshold level}
 #'   \item{tail}{Tail direction}
-#'   \item{multi}{Multiplexer column name}
-#'   \item{preprocess}{Preprocessing information}
-#'   \item{timings}{Training time information}
+#'   \item{multiplexer}{Grouping column name}
 #'   \item{data_info}{Dataset dimensions}
-#'   \item{training}{Training data (y and symbol vectors)}
-#'
-#' @seealso \code{\link{qtail}}, \code{\link{predict.mqtail}}, \code{\link{fitted.mqtail}}
 #'
 #' @export
 mqtail <- function(...,
-                   multi = "symbol",
+                   multiplexer,
                    taus = NULL,
                    tail = c("upper", "lower"),
                    threshold_tau = NULL,
@@ -52,215 +44,167 @@ mqtail <- function(...,
   start_time <- Sys.time()
   tail <- match.arg(tail)
 
-  dots <- list(...)
-  parsed <- .parse_mqtail_inputs(dots, multi = multi)
-
-  x <- parsed$x
-  y <- as.numeric(parsed$y)
-  symbol <- as.character(parsed$symbol)
-
-  if (nrow(x) != length(y) || nrow(x) != length(symbol)) {
-    stop("`x`, `y`, and `symbol` must have compatible dimensions.", call. = FALSE)
+  # Set defaults
+  taus <- taus %||% if (tail == "upper") {
+    c(0.95, 0.97, 0.99, 0.995)
+  } else {
+    c(0.05, 0.03, 0.01, 0.005)
   }
 
-  # Get unique symbols
-  unique_symbols <- unique(symbol)
-  if (length(unique_symbols) == 0) {
-    stop("No symbols found in the data.", call. = FALSE)
+  threshold_tau <- threshold_tau %||% if (tail == "upper") 0.99 else 0.01
+  
+  if (!threshold_tau %in% taus) {
+    stop("`threshold_tau` must be one of the values in `taus`", call. = FALSE)
   }
+
+  tau_target <- if (tail == "upper") max(taus) else min(taus)
 
   if (verbose) {
-    message(sprintf("Training mqtail for %d symbols...", length(unique_symbols)))
+    message("=== Starting mqtail Model Fitting ===")
+    message(sprintf("Tail: %s", tail))
+    message(sprintf("Taus: %s", paste(taus, collapse = ", ")))
+    message(sprintf("Threshold tau: %.4f", threshold_tau))
+    message(sprintf("Target tau: %.4f", tau_target))
   }
 
-  # Train one qtail per symbol
-  models <- list()
-  symbol_info <- list()
-  ecdf_funs <- list()
+  # Train one mqbm per tau
+  mqbm_models <- list()
+  
+  # Extract control parameters and remove them from params to avoid conflicts
+  nrounds_val <- params$nrounds %||% 500
+  nfolds_val <- params$nfolds %||% 5
+  early_stopping_val <- params$early_stopping_rounds %||% 50
+  seed_val <- params$seed %||% 1
+  
+  # Create params_clean without control parameters
+  params_clean <- params[!names(params) %in% c("nrounds", "nfolds", "early_stopping_rounds", "seed")]
+  
+  if (verbose) {
+    message(sprintf("\n=== Fitting %d mqbm Models (one per tau) ===", length(taus)))
+  }
+  
+  for (j in seq_along(taus)) {
+    tau <- taus[j]
+    
+    if (verbose) {
+      message(sprintf("[%d/%d] Fitting mqbm for tau=%.4f...", j, length(taus), tau))
+    }
 
-  for (sym in unique_symbols) {
-    idx <- which(symbol == sym)
-    x_sym <- x[idx, , drop = FALSE]
-    y_sym <- y[idx]
-
-    # Store symbol-specific info
-    symbol_info[[sym]] <- list(
-      n = length(idx),
-      indices = idx
-    )
-
-    # Build ECDF for this symbol's training y values
-    ecdf_funs[[sym]] <- stats::ecdf(y_sym)
-
-    # Subset and remap train/val indices for this symbol
-    symbol_indices <- .subset_indices_for_symbol(
-      global_idx = idx,
+    # Call mqbm with all original arguments plus current tau
+    mqbm_models[[as.character(tau)]] <- mqbm(
+      ...,
+      multiplexer = multiplexer,
+      tau = tau,
+      nrounds = nrounds_val,
+      nfolds = nfolds_val,
+      params = params_clean,
+      early_stopping_rounds = early_stopping_val,
+      seed = seed_val,
       train_idx = train_idx,
       val_idx = val_idx,
       folds = folds
     )
-
+    
     if (verbose) {
-      message(sprintf("  Symbol %s (n=%d)...", sym, length(idx)))
+      message(sprintf("  ✓ Completed tau=%.4f", tau))
     }
+  }
 
-    # Train qtail for this symbol with symbol-specific indices
-    models[[sym]] <- qtail(
-      x = x_sym,
-      y = y_sym,
-      taus = taus,
-      tail = tail,
-      threshold_tau = threshold_tau,
-      params = params,
-      verbose = FALSE,  # Suppress qtail's own verbosity
-      train_idx = symbol_indices$train_idx,
-      val_idx = symbol_indices$val_idx,
-      folds = symbol_indices$folds
+  # Get multiplexer values from first mqbm model
+  first_mqbm <- mqbm_models[[1]]
+  multiplexer_values <- first_mqbm$multiplexer_values
+  multiplexer_info <- first_mqbm$multiplexer_info
+  
+  # Fit GPD per multiplexer value
+  if (verbose) {
+    message(sprintf("\n=== Fitting GPD Models for %d Groups ===", length(multiplexer_values)))
+    message(sprintf("Using threshold tau: %.4f", threshold_tau))
+  }
+  
+  evt_models <- list()
+  thresh_mqbm <- mqbm_models[[as.character(threshold_tau)]]
+  
+  for (val_idx in seq_along(multiplexer_values)) {
+    val <- multiplexer_values[val_idx]
+    
+    if (verbose) {
+      message(sprintf("[%d/%d] Processing group: %s", val_idx, length(multiplexer_values), val))
+    }
+    
+    # Get training data for this value
+    idx <- thresh_mqbm$multiplexer_info[[val]]$indices
+    y_grp <- thresh_mqbm$training$y[idx]
+    
+    # Get threshold predictions
+    fitted_thresh <- fitted(thresh_mqbm$models[[val]])
+    
+    # Compute exceedances
+    r <- y_grp - fitted_thresh
+    e <- if (tail == "upper") pmax(r, 0) else pmax(-r, 0)
+    e_exc <- e[e > 0 & is.finite(e)]
+    
+    # Fit GPD
+    xi <- 0.1
+    beta <- 1.0
+    
+    if (length(e_exc) < 10) {
+      if (verbose) {
+        message(sprintf("  ⚠ Only %d exceedances, using default GPD parameters", length(e_exc)))
+      }
+      beta <- ifelse(length(e_exc) > 0, stats::sd(e_exc), 1.0)
+    } else {
+      if (verbose) {
+        message(sprintf("  Fitting GPD with %d exceedances", length(e_exc)))
+      }
+      tryCatch({
+        evt_data <- data.frame(y = as.numeric(e_exc))
+        evfit <- evgam::evgam(y ~ 1, data = evt_data, family = "gpd")
+        coef_evt <- stats::coef(evfit)
+        xi <- coef_evt[1]
+        beta <- exp(coef_evt[2])
+        if (verbose) {
+          message(sprintf("  ✓ GPD fit: xi=%.4f, beta=%.4f", xi, beta))
+        }
+      }, error = function(e) {
+        if (verbose) message(sprintf("  ✗ GPD fit failed, using defaults (xi=%.4f, beta=%.4f)", xi, beta))
+        beta <<- stats::sd(e_exc)
+      })
+    }
+    
+    evt_models[[val]] <- list(
+      xi = xi,
+      beta = beta,
+      n_exceedances = length(e_exc)
     )
   }
 
   end_time <- Sys.time()
+  elapsed <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  
+  if (verbose) {
+    message(sprintf("\n=== mqtail Fitting Complete ==="))
+    message(sprintf("Total time: %.2f seconds", elapsed))
+    message(sprintf("Total models fit: %d mqbm models + %d GPD models", length(taus), length(multiplexer_values)))
+  }
 
   out <- list(
-    models = models,
-    symbols = unique_symbols,
-    symbol_info = symbol_info,
-    ecdf_funs = ecdf_funs,
-    taus = taus %||% models[[unique_symbols[1]]]$taus,
-    tau_target = models[[unique_symbols[1]]]$tau_target,
-    threshold_tau = threshold_tau %||% models[[unique_symbols[1]]]$threshold_tau,
+    mqbm_models = mqbm_models,
+    multiplexer_values = multiplexer_values,
+    multiplexer_info = multiplexer_info,
+    evt_models = evt_models,
+    taus = taus,
+    tau_target = tau_target,
+    threshold_tau = threshold_tau,
     tail = tail,
-    multi = multi,
-    preprocess = parsed$preprocess,
+    multiplexer = multiplexer,
+    data_info = first_mqbm$data_info,
     timings = list(
       start = start_time,
       end = end_time,
       elapsed = as.numeric(difftime(end_time, start_time, units = "secs"))
-    ),
-    data_info = list(
-      n = nrow(x),
-      p = ncol(x),
-      n_symbols = length(unique_symbols)
-    ),
-    training = list(
-      y = y,
-      symbol = symbol
     )
   )
 
   class(out) <- "mqtail"
   out
-}
-
-.parse_mqtail_inputs <- function(dots, multi = "symbol") {
-  if (length(dots) == 0) {
-    stop(
-      sprintf("Provide either a formula with data (containing '%s' column) or an `x`/`y`/`%s` triplet.", multi, multi),
-      call. = FALSE
-    )
-  }
-
-  nm <- names(dots)
-  if (is.null(nm)) {
-    nm <- rep("", length(dots))
-  }
-  nm[is.na(nm)] <- ""
-
-  is_formula <- vapply(dots, inherits, logical(1), what = "formula")
-  if (any(is_formula)) {
-    formula_idx <- which(is_formula)[1]
-    formula <- dots[[formula_idx]]
-
-    data_idx <- integer(0)
-    if ("data" %in% nm) {
-      data_idx <- which(nm == "data")[1]
-    } else {
-      unnamed <- which(!nzchar(nm))
-      unnamed <- unnamed[unnamed != formula_idx]
-      if (length(unnamed) > 0) {
-        data_idx <- unnamed[1]
-      }
-    }
-
-    if (length(data_idx) == 0) {
-      stop("When using formula interface, `data` must be provided.", call. = FALSE)
-    }
-
-    data <- dots[[data_idx]]
-
-    if (!multi %in% names(data)) {
-      stop(sprintf("`data` must contain a '%s' column.", multi), call. = FALSE)
-    }
-
-    # Extract symbol before processing formula
-    symbol <- data[[multi]]
-    data_without_symbol <- data[, names(data) != multi, drop = FALSE]
-
-    mf <- stats::model.frame(formula, data = data_without_symbol, na.action = stats::na.pass)
-    y <- stats::model.response(mf)
-    mm <- stats::model.matrix(formula, mf)
-    if ("(Intercept)" %in% colnames(mm)) {
-      mm <- mm[, colnames(mm) != "(Intercept)", drop = FALSE]
-    }
-    terms_obj <- stats::terms(mf)
-
-    preprocess <- list(
-      type = "formula",
-      terms = terms_obj,
-      xlevels = stats::.getXlevels(terms_obj, mf),
-      contrasts = attr(mm, "contrasts"),
-      formula = formula,
-      feature_names = colnames(mm)
-    )
-
-    return(list(
-      x = mm,
-      y = y,
-      symbol = symbol,
-      preprocess = preprocess
-    ))
-  }
-
-  # x/y/multi interface
-  x_idx <- if ("x" %in% nm) which(nm == "x")[1] else 1L
-  remaining <- setdiff(seq_along(dots), x_idx)
-  if (length(remaining) == 0) {
-    stop(sprintf("`y` and `%s` must be provided when using `x`/`y`/`%s` inputs.", multi, multi), call. = FALSE)
-  }
-
-  y_idx <- if ("y" %in% nm) {
-    which(nm == "y")[1]
-  } else {
-    remaining[1]
-  }
-
-  remaining <- setdiff(remaining, y_idx)
-  if (length(remaining) == 0) {
-    stop(sprintf("`%s` must be provided when using `x`/`y`/`%s` inputs.", multi, multi), call. = FALSE)
-  }
-
-  # Try both the multi parameter name and "symbol" for backward compatibility
-  symbol_idx <- if (multi %in% nm) {
-    which(nm == multi)[1]
-  } else if ("symbol" %in% nm) {
-    which(nm == "symbol")[1]
-  } else {
-    remaining[1]
-  }
-
-  x <- dots[[x_idx]]
-  y <- dots[[y_idx]]
-  symbol <- dots[[symbol_idx]]
-
-  preprocess <- list(
-    type = "xy",
-    feature_names = colnames(x)
-  )
-
-  list(
-    x = x,
-    y = y,
-    symbol = symbol,
-    preprocess = preprocess
-  )
 }
