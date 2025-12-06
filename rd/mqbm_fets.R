@@ -66,6 +66,7 @@ fit <- mqbm(
   data = qXY,
   train_idx = train_idx,
   val_idx = val_idx,
+  nfolds = 5,
   tau = 0.99,
   nrounds = 600,
   early_stopping_rounds = 10

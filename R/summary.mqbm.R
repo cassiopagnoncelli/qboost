@@ -165,7 +165,7 @@
     trees <- mqbm_object$models[[val]]$best_iter
     
     base_cols <- tibble::tibble(
-      value = val,
+      multiplexer_gate = val,
       n = m$n,
       trees = trees,
       train_pinball = m$pinball,
