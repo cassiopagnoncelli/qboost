@@ -63,17 +63,15 @@ qXY$symbol <- NULL
 # Training mqtail model
 fit <- mqtail(
   y ~ .,
-  multi = "cluster",
+  multiplexer = "cluster",
   data = qXY,
   train_idx = train_idx,
   val_idx = val_idx,
   taus = c(0.95, 0.97, 0.99, 0.995),
   threshold_tau = 0.97,
-  params = list(
-    nrounds = 600,
-    early_stopping_rounds = 10,
-    nfolds = 4
-  ),
+  nrounds = 600,
+  early_stopping_rounds = 10,
+  nfolds = 4,
   verbose = TRUE
 )
 

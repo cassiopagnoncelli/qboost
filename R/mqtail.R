@@ -12,7 +12,11 @@
 #' @param tail Character string: \code{"upper"} or \code{"lower"}. Default is \code{"upper"}.
 #' @param threshold_tau Quantile level for EVT threshold. Must be in \code{taus}.
 #'   If \code{NULL}, defaults to 0.99 for upper tail or 0.01 for lower tail.
-#' @param params Named list of parameters for \code{\link{qbm}} models.
+#' @param nrounds Maximum number of boosting rounds. Default is 500.
+#' @param nfolds Number of CV folds for early stopping. Default is 5.
+#' @param early_stopping_rounds Early stopping rounds. Default is 50.
+#' @param seed Random seed. Default is 1.
+#' @param params Additional named list of parameters for \code{\link{lightgbm}}.
 #' @param verbose Logical; print progress messages. Default is \code{FALSE}.
 #' @param train_idx Optional training indices. Passed to \code{\link{mqbm}}.
 #' @param val_idx Optional validation indices. Passed to \code{\link{mqbm}}.
@@ -36,6 +40,10 @@ mqtail <- function(...,
                    taus = NULL,
                    tail = c("upper", "lower"),
                    threshold_tau = NULL,
+                   nrounds = 500,
+                   nfolds = 5,
+                   early_stopping_rounds = 50,
+                   seed = 1,
                    params = list(),
                    verbose = FALSE,
                    train_idx = NULL,
@@ -70,15 +78,6 @@ mqtail <- function(...,
   # Train one mqbm per tau
   mqbm_models <- list()
   
-  # Extract control parameters and remove them from params to avoid conflicts
-  nrounds_val <- params$nrounds %||% 500
-  nfolds_val <- params$nfolds %||% 5
-  early_stopping_val <- params$early_stopping_rounds %||% 50
-  seed_val <- params$seed %||% 1
-  
-  # Create params_clean without control parameters
-  params_clean <- params[!names(params) %in% c("nrounds", "nfolds", "early_stopping_rounds", "seed")]
-  
   if (verbose) {
     message(sprintf("\n=== Fitting %d mqbm Models (one per tau) ===", length(taus)))
   }
@@ -95,11 +94,11 @@ mqtail <- function(...,
       ...,
       multiplexer = multiplexer,
       tau = tau,
-      nrounds = nrounds_val,
-      nfolds = nfolds_val,
-      params = params_clean,
-      early_stopping_rounds = early_stopping_val,
-      seed = seed_val,
+      nrounds = nrounds,
+      nfolds = nfolds,
+      early_stopping_rounds = early_stopping_rounds,
+      seed = seed,
+      params = params,
       train_idx = train_idx,
       val_idx = val_idx,
       folds = folds
@@ -117,7 +116,7 @@ mqtail <- function(...,
   
   # Fit GPD per multiplexer value
   if (verbose) {
-    message(sprintf("\n=== Fitting GPD Models for %d Groups ===", length(multiplexer_values)))
+    message(sprintf("\n=== Fitting GPD Models for %d Multiplexer Gates ===", length(multiplexer_values)))
     message(sprintf("Using threshold tau: %.4f", threshold_tau))
   }
   
@@ -128,7 +127,7 @@ mqtail <- function(...,
     val <- multiplexer_values[val_idx]
     
     if (verbose) {
-      message(sprintf("[%d/%d] Processing group: %s", val_idx, length(multiplexer_values), val))
+      message(sprintf("[%d/%d] Processing multiplexer gate: %s", val_idx, length(multiplexer_values), val))
     }
     
     # Get training data for this value

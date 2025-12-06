@@ -36,6 +36,10 @@ apply_pava_monotonicity <- function(pred_matrix, taus) {
     stop("pred_matrix columns must match length of taus")
   }
   adjust_row <- function(row_vals) {
+    # Skip isotonic regression if row contains NA values
+    if (any(is.na(row_vals))) {
+      return(row_vals)
+    }
     iso <- stats::isoreg(x = taus, y = row_vals)
     # Interpolate back to original taus to align length/order
     stats::approx(x = iso$x, y = iso$yf, xout = taus, ties = "ordered")$y

@@ -32,16 +32,15 @@ cat("Note: mqtail fits one qtail model per symbol\n")
 
 fit <- mqtail(
   y ~ x1 + x2 + x3,
+  multiplexer = "symbol",
   data = df,
   train_idx = train_idx,
   val_idx = val_idx,
   tail = "upper",
   taus = c(0.95, 0.98, 0.99, 0.995),
   threshold_tau = 0.98,
-  params = list(
-    nrounds = 100,
-    nfolds = 3
-  ),
+  nrounds = 100,
+  nfolds = 3,
   verbose = TRUE
 )
 
@@ -62,38 +61,33 @@ cat("Predictions generated:", length(preds), "\n")
 cat("Prediction range:", range(preds), "\n")
 
 # ------------------------------------------------------------------
-# Predictions per symbol
+# Predictions per multiplexer value
 # ------------------------------------------------------------------
-cat("\nPrediction statistics per symbol:\n")
+cat("\nPrediction statistics per multiplexer value:\n")
 test_df <- df[test_idx, ]
-for (sym in fit$symbols) {
-  sym_idx <- which(test_df$symbol == sym)
-  if (length(sym_idx) > 0) {
-    sym_preds <- preds[sym_idx]
-    sym_actuals <- test_df$y[sym_idx]
-    
+for (val in fit$multiplexer_values) {
+  val_idx <- which(test_df$symbol == val)
+  if (length(val_idx) > 0) {
+    val_preds <- preds[val_idx]
+    val_actuals <- test_df$y[val_idx]
+
     # Calculate exceedances
-    n_exceed <- sum(sym_actuals > sym_preds)
-    exceed_rate <- n_exceed / length(sym_idx)
-    
+    n_exceed <- sum(val_actuals > val_preds)
+    exceed_rate <- n_exceed / length(val_idx)
+
     cat(sprintf("  %s: mean_pred=%.3f, n=%d, exceedances=%d (%.1f%%)\n",
-                sym, mean(sym_preds), length(sym_idx), n_exceed, exceed_rate * 100))
+                val, mean(val_preds), length(val_idx), n_exceed, exceed_rate * 100))
   }
 }
 
 # ------------------------------------------------------------------
-# Compare tail behavior across symbols
+# Compare tail behavior across multiplexer values
 # ------------------------------------------------------------------
-cat("\n\nComparing tail models across symbols:\n")
-for (sym in fit$symbols) {
-  model <- fit$models[[sym]]
-  cat(sprintf("  %s: threshold_tau=%.3f, tau_target=%.4f, tail=%s\n",
-              sym, model$threshold_tau, model$tau_target, model$tail))
-  
-  # Show EVT parameters (shape parameter)
-  if (!is.null(model$evt_fit)) {
-    cat(sprintf("    EVT shape parameter (xi): %.4f\n", model$evt_fit$xi))
-  }
+cat("\n\nComparing GPD parameters per multiplexer value:\n")
+for (val in fit$multiplexer_values) {
+  evt <- fit$evt_models[[val]]
+  cat(sprintf("  %s: xi=%.4f, beta=%.4f, n_exceedances=%d\n",
+              val, evt$xi, evt$beta, evt$n_exceedances))
 }
 
 # ------------------------------------------------------------------
@@ -104,16 +98,16 @@ fitted_vals <- fitted(fit)
 cat("Length:", length(fitted_vals), "\n")
 cat("Range:", range(fitted_vals), "\n")
 
-# Fitted values per symbol
-for (sym in fit$symbols) {
-  sym_fitted <- fitted_vals[df$symbol[train_idx] == sym]
-  cat(sprintf("  %s: mean=%.3f, sd=%.3f\n", sym, mean(sym_fitted), sd(sym_fitted)))
+# Fitted values per multiplexer value
+for (val in fit$multiplexer_values) {
+  val_fitted <- fitted_vals[df$symbol[train_idx] == val]
+  cat(sprintf("  %s: mean=%.3f, sd=%.3f\n", val, mean(val_fitted, na.rm = TRUE), sd(val_fitted, na.rm = TRUE)))
 }
 
 # ------------------------------------------------------------------
-# Custom multi parameter example
+# Custom multiplexer parameter example
 # ------------------------------------------------------------------
-cat("\n\nCustom multi parameter example:\n")
+cat("\n\nCustom multiplexer parameter example:\n")
 
 # Create data with a different grouping column
 df2 <- data.frame(
@@ -132,20 +126,21 @@ df2$y <- ifelse(df2$region == "North",
                               df2$x3 + rt(1000, df = 4),
                               df2$x1 + df2$x2 + rt(1000, df = 4))))
 
-# Train with custom multi parameter
+# Train with custom multiplexer parameter
 fit2 <- mqtail(
   y ~ x1 + x2 + x3,
   data = df2,
-  multi = "region",  # Use "region" instead of default "symbol"
+  multiplexer = "region",  # Use "region" instead of "symbol"
   tail = "upper",
   taus = c(0.95, 0.98, 0.99),
   threshold_tau = 0.98,
-  params = list(nrounds = 50, nfolds = 3),
+  nrounds = 50,
+  nfolds = 3,
   verbose = TRUE
 )
 
-cat("Multi parameter used:", fit2$multi, "\n")
-cat("Regions:", paste(fit2$symbols, collapse = ", "), "\n")
+cat("Multiplexer used:", fit2$multiplexer, "\n")
+cat("Regions:", paste(fit2$multiplexer_values, collapse = ", "), "\n")
 
 # Predictions work with the region column
 newdata <- data.frame(

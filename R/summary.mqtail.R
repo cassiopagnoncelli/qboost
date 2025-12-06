@@ -1,6 +1,6 @@
 #' Summarize an mqtail model
 #'
-#' Aggregates performance metrics across all group-specific models.
+#' Aggregates performance metrics per multiplexer gate.
 #'
 #' @param object A fitted mqtail model object returned by \code{\link{mqtail}}.
 #' @param ... Additional arguments (currently unused).
