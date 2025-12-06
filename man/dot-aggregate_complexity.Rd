@@ -2,7 +2,7 @@
 % Please edit documentation in R/summary.mqbm.R
 \name{.aggregate_complexity}
 \alias{.aggregate_complexity}
-\title{Aggregate complexity metrics across symbols}
+\title{Aggregate complexity metrics across multiplexer values}
 \usage{
 .aggregate_complexity(mqbm_object)
 }
@@ -13,6 +13,6 @@
 List with complexity metrics
 }
 \description{
-Aggregate complexity metrics across symbols
+Aggregate complexity metrics across multiplexer values
 }
 \keyword{internal}

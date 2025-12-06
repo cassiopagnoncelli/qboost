@@ -10,7 +10,10 @@ qtail(
   tail = c("upper", "lower"),
   threshold_tau = NULL,
   params = list(),
-  verbose = FALSE
+  verbose = FALSE,
+  train_idx = NULL,
+  val_idx = NULL,
+  folds = NULL
 )
 }
 \arguments{

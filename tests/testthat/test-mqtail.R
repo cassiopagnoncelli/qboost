@@ -6,13 +6,14 @@ test_that("mqtail fit works with formula interface", {
   df <- data.frame(
     x1 = rnorm(n),
     x2 = rnorm(n),
-    symbol = sample(c("A", "B", "C"), n, replace = TRUE)
+    cluster = sample(c("A", "B", "C"), n, replace = TRUE)
   )
   df$y <- 1.5 * df$x1 + 0.8 * df$x2 + rt(n, df = 3)
   
   fit <- mqtail(
     y ~ x1 + x2,
     data = df,
+    multiplexer = "cluster",
     tail = "upper",
     taus = c(0.9, 0.95, 0.99),
     threshold_tau = 0.99,
@@ -21,7 +22,7 @@ test_that("mqtail fit works with formula interface", {
   )
   
   expect_s3_class(fit, "mqtail")
-  expect_equal(fit$multi, "symbol")
+  expect_equal(fit$multiplexer, "cluster")
   expect_equal(fit$taus, c(0.9, 0.95, 0.99))
   expect_equal(fit$threshold_tau, 0.99)
   expect_equal(fit$tail, "upper")
@@ -36,13 +37,14 @@ test_that("mqtail fit works with matrix interface", {
   n <- 150
   X <- matrix(rnorm(n * 2), ncol = 2)
   colnames(X) <- c("x1", "x2")
-  symbol <- sample(c("A", "B"), n, replace = TRUE)
+  cluster <- sample(c("A", "B"), n, replace = TRUE)
   y <- X[, 1] * 1.5 + X[, 2] * 0.8 + rnorm(n)
   
   fit <- mqtail(
     x = X,
     y = y,
-    symbol = symbol,
+    cluster = cluster,
+    multiplexer = "cluster",
     tail = "lower",
     taus = c(0.01, 0.05, 0.1),
     threshold_tau = 0.01,
@@ -57,7 +59,7 @@ test_that("mqtail fit works with matrix interface", {
   expect_length(fit$mqbm_models, 3)
 })
 
-test_that("mqtail fit works with custom multi parameter", {
+test_that("mqtail fit works with custom multiplexer parameter", {
   skip_on_cran()
   
   set.seed(125)
@@ -72,7 +74,7 @@ test_that("mqtail fit works with custom multi parameter", {
   fit <- mqtail(
     y ~ x1 + x2,
     data = df,
-    multi = "cluster",
+    multiplexer = "cluster",
     tail = "upper",
     taus = c(0.9, 0.95),
     threshold_tau = 0.95,
@@ -81,8 +83,8 @@ test_that("mqtail fit works with custom multi parameter", {
   )
   
   expect_s3_class(fit, "mqtail")
-  expect_equal(fit$multi, "cluster")
-  expect_equal(fit$groups, c("C1", "C2"))
+  expect_equal(fit$multiplexer, "cluster")
+  expect_equal(fit$multiplexer_values, c("C1", "C2"))
   expect_length(fit$evt_models, 2)
 })
 
@@ -93,13 +95,14 @@ test_that("mqtail print works", {
   n <- 120
   df <- data.frame(
     x1 = rnorm(n),
-    symbol = sample(c("A", "B"), n, replace = TRUE)
+    cluster = sample(c("A", "B"), n, replace = TRUE)
   )
   df$y <- df$x1 + rnorm(n)
   
   fit <- mqtail(
     y ~ x1,
     data = df,
+    multiplexer = "cluster",
     tail = "upper",
     taus = c(0.9, 0.95),
     threshold_tau = 0.95,
@@ -110,7 +113,7 @@ test_that("mqtail print works", {
   # Test that print doesn't error and shows expected content
   expect_output(print(fit), "Extreme Tail Quantile Model")
   expect_output(print(fit), "upper")
-  expect_output(print(fit), "symbol")
+  expect_output(print(fit), "cluster")
 })
 
 test_that("mqtail summary works", {
@@ -120,13 +123,14 @@ test_that("mqtail summary works", {
   n <- 120
   df <- data.frame(
     x1 = rnorm(n),
-    symbol = sample(c("A", "B"), n, replace = TRUE)
+    cluster = sample(c("A", "B"), n, replace = TRUE)
   )
   df$y <- df$x1 + rnorm(n)
   
   fit <- mqtail(
     y ~ x1,
     data = df,
+    multiplexer = "cluster",
     tail = "upper",
     taus = c(0.9, 0.95),
     threshold_tau = 0.95,
@@ -149,13 +153,14 @@ test_that("mqtail predict works with surface type", {
   df <- data.frame(
     x1 = rnorm(n),
     x2 = rnorm(n),
-    symbol = sample(c("A", "B"), n, replace = TRUE)
+    cluster = sample(c("A", "B"), n, replace = TRUE)
   )
   df$y <- df$x1 + df$x2 + rnorm(n)
   
   fit <- mqtail(
     y ~ x1 + x2,
     data = df,
+    multiplexer = "cluster",
     tail = "upper",
     taus = c(0.9, 0.95),
     threshold_tau = 0.95,
@@ -166,7 +171,7 @@ test_that("mqtail predict works with surface type", {
   newdata <- data.frame(
     x1 = c(0, 1),
     x2 = c(0, 1),
-    symbol = c("A", "B")
+    cluster = c("A", "B")
   )
   
   preds <- predict(fit, newdata, type = "surface")
@@ -184,13 +189,14 @@ test_that("mqtail predict works with quantile type", {
   df <- data.frame(
     x1 = rnorm(n),
     x2 = rnorm(n),
-    symbol = sample(c("A", "B"), n, replace = TRUE)
+    cluster = sample(c("A", "B"), n, replace = TRUE)
   )
   df$y <- df$x1 + df$x2 + rnorm(n)
   
   fit <- mqtail(
     y ~ x1 + x2,
     data = df,
+    multiplexer = "cluster",
     tail = "upper",
     taus = c(0.9, 0.95),
     threshold_tau = 0.95,
@@ -201,7 +207,7 @@ test_that("mqtail predict works with quantile type", {
   newdata <- data.frame(
     x1 = c(0, 1),
     x2 = c(0, 1),
-    symbol = c("A", "B")
+    cluster = c("A", "B")
   )
   
   preds <- predict(fit, newdata, type = "quantile")
@@ -219,13 +225,14 @@ test_that("mqtail fitted works", {
   n <- 120
   df <- data.frame(
     x1 = rnorm(n),
-    symbol = sample(c("A", "B"), n, replace = TRUE)
+    cluster = sample(c("A", "B"), n, replace = TRUE)
   )
   df$y <- df$x1 + rnorm(n)
   
   fit <- mqtail(
     y ~ x1,
     data = df,
+    multiplexer = "cluster",
     tail = "upper",
     taus = c(0.9, 0.95),
     threshold_tau = 0.95,
@@ -247,13 +254,14 @@ test_that("mqtail residuals works", {
   n <- 120
   df <- data.frame(
     x1 = rnorm(n),
-    symbol = sample(c("A", "B"), n, replace = TRUE)
+    cluster = sample(c("A", "B"), n, replace = TRUE)
   )
   df$y <- df$x1 + rnorm(n)
   
   fit <- mqtail(
     y ~ x1,
     data = df,
+    multiplexer = "cluster",
     tail = "upper",
     taus = c(0.9, 0.95),
     threshold_tau = 0.95,
@@ -276,13 +284,14 @@ test_that("mqtail coef works", {
   df <- data.frame(
     x1 = rnorm(n),
     x2 = rnorm(n),
-    symbol = sample(c("A", "B"), n, replace = TRUE)
+    cluster = sample(c("A", "B"), n, replace = TRUE)
   )
   df$y <- df$x1 + df$x2 + rnorm(n)
   
   fit <- mqtail(
     y ~ x1 + x2,
     data = df,
+    multiplexer = "cluster",
     tail = "upper",
     taus = c(0.9, 0.95),
     threshold_tau = 0.95,
@@ -293,8 +302,8 @@ test_that("mqtail coef works", {
   coefs <- coef(fit)
   
   expect_s3_class(coefs, "data.frame")
-  expect_equal(nrow(coefs), 2)  # Two groups
-  expect_true("group" %in% names(coefs))
+  expect_equal(nrow(coefs), 2)  # Two values
+  expect_true("value" %in% names(coefs))
   expect_true("xi" %in% names(coefs))
   expect_true("beta" %in% names(coefs))
 })
@@ -307,7 +316,7 @@ test_that("mqtail works with train/val split", {
   df <- data.frame(
     x1 = rnorm(n),
     x2 = rnorm(n),
-    symbol = sample(c("A", "B"), n, replace = TRUE)
+    cluster = sample(c("A", "B"), n, replace = TRUE)
   )
   df$y <- df$x1 + df$x2 + rnorm(n)
   
@@ -317,6 +326,7 @@ test_that("mqtail works with train/val split", {
   fit <- mqtail(
     y ~ x1 + x2,
     data = df,
+    multiplexer = "cluster",
     tail = "upper",
     taus = c(0.9, 0.95),
     threshold_tau = 0.95,
@@ -330,7 +340,7 @@ test_that("mqtail works with train/val split", {
   expect_length(fit$mqbm_models, 2)
 })
 
-test_that("mqtail errors with missing multi column", {
+test_that("mqtail errors with missing multiplexer column", {
   skip_on_cran()
   
   set.seed(134)
@@ -344,10 +354,10 @@ test_that("mqtail errors with missing multi column", {
     mqtail(
       y ~ x1,
       data = df,
-      multi = "symbol",
+      multiplexer = "cluster",
       params = list(nrounds = 10)
     ),
-    "symbol"
+    "cluster"
   )
 })
 
@@ -358,7 +368,7 @@ test_that("mqtail errors with invalid threshold_tau", {
   n <- 100
   df <- data.frame(
     x1 = rnorm(n),
-    symbol = sample(c("A", "B"), n, replace = TRUE)
+    cluster = sample(c("A", "B"), n, replace = TRUE)
   )
   df$y <- df$x1 + rnorm(n)
   
@@ -366,6 +376,7 @@ test_that("mqtail errors with invalid threshold_tau", {
     mqtail(
       y ~ x1,
       data = df,
+      multiplexer = "cluster",
       taus = c(0.9, 0.95),
       threshold_tau = 0.99,
       params = list(nrounds = 10)
@@ -381,13 +392,14 @@ test_that("mqtail default taus work correctly for upper tail", {
   n <- 120
   df <- data.frame(
     x1 = rnorm(n),
-    symbol = sample(c("A", "B"), n, replace = TRUE)
+    cluster = sample(c("A", "B"), n, replace = TRUE)
   )
   df$y <- df$x1 + rnorm(n)
   
   fit <- mqtail(
     y ~ x1,
     data = df,
+    multiplexer = "cluster",
     tail = "upper",
     params = list(nrounds = 10, nfolds = 2),
     verbose = FALSE
@@ -404,13 +416,14 @@ test_that("mqtail default taus work correctly for lower tail", {
   n <- 120
   df <- data.frame(
     x1 = rnorm(n),
-    symbol = sample(c("A", "B"), n, replace = TRUE)
+    cluster = sample(c("A", "B"), n, replace = TRUE)
   )
   df$y <- df$x1 + rnorm(n)
   
   fit <- mqtail(
     y ~ x1,
     data = df,
+    multiplexer = "cluster",
     tail = "lower",
     params = list(nrounds = 10, nfolds = 2),
     verbose = FALSE
@@ -428,7 +441,7 @@ test_that("mqtail handles custom folds", {
   df <- data.frame(
     x1 = rnorm(n),
     x2 = rnorm(n),
-    symbol = sample(c("A", "B"), n, replace = TRUE)
+    cluster = sample(c("A", "B"), n, replace = TRUE)
   )
   df$y <- df$x1 + df$x2 + rnorm(n)
   
@@ -442,6 +455,7 @@ test_that("mqtail handles custom folds", {
   fit <- mqtail(
     y ~ x1 + x2,
     data = df,
+    multiplexer = "cluster",
     tail = "upper",
     taus = c(0.9, 0.95),
     threshold_tau = 0.95,
@@ -461,7 +475,7 @@ test_that("mqtail GPD fitting handles small exceedances", {
   n <- 80  # Small sample to test edge case
   df <- data.frame(
     x1 = rnorm(n),
-    symbol = sample(c("A", "B"), n, replace = TRUE)
+    cluster = sample(c("A", "B"), n, replace = TRUE)
   )
   df$y <- df$x1 + rnorm(n)
   
@@ -469,6 +483,7 @@ test_that("mqtail GPD fitting handles small exceedances", {
   fit <- mqtail(
     y ~ x1,
     data = df,
+    multiplexer = "cluster",
     tail = "upper",
     taus = c(0.9, 0.95, 0.99),
     threshold_tau = 0.99,
@@ -488,13 +503,14 @@ test_that("mqtail timing information is recorded", {
   n <- 100
   df <- data.frame(
     x1 = rnorm(n),
-    symbol = sample(c("A", "B"), n, replace = TRUE)
+    cluster = sample(c("A", "B"), n, replace = TRUE)
   )
   df$y <- df$x1 + rnorm(n)
   
   fit <- mqtail(
     y ~ x1,
     data = df,
+    multiplexer = "cluster",
     tail = "upper",
     taus = c(0.9, 0.95),
     threshold_tau = 0.95,

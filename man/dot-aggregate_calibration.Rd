@@ -2,7 +2,7 @@
 % Please edit documentation in R/summary.mqbm.R
 \name{.aggregate_calibration}
 \alias{.aggregate_calibration}
-\title{Aggregate calibration metrics across symbols}
+\title{Aggregate calibration metrics across multiplexer values}
 \usage{
 .aggregate_calibration(mqbm_object)
 }
@@ -13,6 +13,6 @@
 List with aggregated calibration metrics
 }
 \description{
-Aggregate calibration metrics across symbols
+Aggregate calibration metrics across multiplexer values
 }
 \keyword{internal}

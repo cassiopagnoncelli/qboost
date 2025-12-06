@@ -15,32 +15,32 @@
 A numeric vector of residuals with length equal to the number of
 training observations. Each element is computed as \code{y - fitted},
 where \code{fitted} is the predicted quantile from the appropriate
-symbol-specific model. Residuals are returned in the same order as the
+group-specific model. Residuals are returned in the same order as the
 original training data.
 }
 \description{
 Computes residuals as the difference between observed values and fitted
-quantile predictions from the training data. For multi-symbol quantile
-regression, residuals are computed separately for each symbol-specific
+quantile predictions from the training data. For multiplexed quantile
+regression, residuals are computed separately for each group-specific
 model and returned in the original training data order.
 }
 \examples{
 \dontrun{
-# Fit a mqbm model with multiple symbols
+# Fit a mqbm model with multiple groups
 df <- data.frame(
   x1 = rnorm(200),
   x2 = rnorm(200),
-  symbol = sample(c("A", "B", "C"), 200, replace = TRUE)
+  cluster = sample(c("A", "B", "C"), 200, replace = TRUE)
 )
 df$y <- df$x1 * 0.5 + rnorm(200)
-fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 50)
+fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 50)
 
 # Extract residuals
 resid <- residuals(fit)
 summary(resid)
 
-# Residuals by symbol
-tapply(resid, df$symbol, summary)
+# Residuals by group
+tapply(resid, df$cluster, summary)
 }
 
 }

@@ -17,7 +17,10 @@ print.mqbm <- function(x, ...) {
   cat(" Elapsed (s):      ", format(x$timings$elapsed, digits = 4), "\n", sep = "")
   cat(" Tau:              ", format(x$tau, digits = 3), "\n", sep = "")
   cat(" Multiplexer:      ", multiplexer_name, "\n", sep = "")
-  cat(" Values:           ", x$data_info$n_multiplexer, " (", paste(x$multiplexer_values, collapse = ", "), ")\n", sep = "")
+  cat(
+    " Values:           ", x$data_info$n_multiplexer,
+    " (", paste(x$multiplexer_values, collapse = ", "), ")\n", sep = ""
+  )
   
   cat("\nModels per value:\n")
   for (val in x$multiplexer_values) {

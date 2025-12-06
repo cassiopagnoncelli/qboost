@@ -2,40 +2,19 @@
 % Please edit documentation in R/predict.mqtail.R
 \name{predict.mqtail}
 \alias{predict.mqtail}
-\title{Predict from a symbol-based mqtail model}
+\title{Predict from mqtail model}
 \usage{
-\method{predict}{mqtail}(
-  object,
-  newdata,
-  multi = NULL,
-  symbol = NULL,
-  type = c("surface", "quantile"),
-  ...
-)
+\method{predict}{mqtail}(object, newdata, type = c("surface", "quantile"), ...)
 }
 \arguments{
-\item{object}{A fitted mqtail model object returned by \code{\link{mqtail}}.}
+\item{object}{A fitted mqtail model}
 
-\item{newdata}{A data.frame or matrix of predictor variables.}
+\item{newdata}{Data for prediction}
 
-\item{multi}{Optional character vector specifying which symbol-specific model
-to use for each row of \code{newdata}.}
+\item{type}{Either "surface" (default) or "quantile"}
 
-\item{symbol}{Deprecated. Use \code{multi} instead. Kept for backward compatibility.}
-
-\item{type}{Character string specifying the type of prediction. Either \code{"surface"}
-for raw quantile predictions (default) or \code{"quantile"} for ECDF-transformed
-probabilities.}
-
-\item{...}{Additional arguments (currently unused).}
-}
-\value{
-A numeric vector of length \code{nrow(newdata)} containing predictions.
+\item{...}{Passed to predict.mqbm}
 }
 \description{
-Routes predictions to the appropriate symbol-specific \code{\link{qtail}} model
-based on the symbol identifier for each observation.
-}
-\seealso{
-\code{\link{mqtail}}, \code{\link{predict.qtail}}, \code{\link{fitted.mqtail}}
+Predict from mqtail model
 }

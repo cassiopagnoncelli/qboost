@@ -33,12 +33,12 @@ test_that("residuals.mqbm works correctly", {
   df <- data.frame(
     x1 = rnorm(200),
     x2 = rnorm(200),
-    symbol = sample(c("A", "B", "C"), 200, replace = TRUE)
+    cluster = sample(c("A", "B", "C"), 200, replace = TRUE)
   )
   df$y <- df$x1 * 0.5 + rnorm(200)
   
   # Fit mqbm model
-  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 20, nfolds = 2)
+  fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 20, nfolds = 2)
   
   # Get residuals
   resid <- residuals(fit)
@@ -58,28 +58,28 @@ test_that("residuals.mqbm returns residuals in correct order", {
   df <- data.frame(
     x1 = rnorm(150),
     x2 = rnorm(150),
-    symbol = sample(c("A", "B"), 150, replace = TRUE)
+    cluster = sample(c("A", "B"), 150, replace = TRUE)
   )
   df$y <- df$x1 * 0.5 + rnorm(150)
   
   # Fit mqbm model
-  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 20, nfolds = 2)
+  fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 20, nfolds = 2)
   
   # Get residuals and fitted values
   resid <- residuals(fit)
   fitted_vals <- fitted(fit, type = "surface")
   
-  # Check each symbol's residuals
-  for (sym in fit$symbols) {
-    idx <- which(df$symbol == sym)
+  # Check each value's residuals
+  for (val in fit$multiplexer_values) {
+    idx <- which(df$cluster == val)
     
-    # Extract residuals for this symbol
-    resid_sym <- resid[idx]
-    fitted_sym <- fitted_vals[idx]
-    y_sym <- df$y[idx]
+    # Extract residuals for this value
+    resid_val <- resid[idx]
+    fitted_val <- fitted_vals[idx]
+    y_val <- df$y[idx]
     
-    # Verify residuals = y - fitted for this symbol
-    expect_equal(resid_sym, y_sym - fitted_sym)
+    # Verify residuals = y - fitted for this value
+    expect_equal(resid_val, y_val - fitted_val)
   }
 })
 
@@ -110,13 +110,13 @@ test_that("residuals work with x/y interface for qbm", {
   expect_equal(resid, y - fit$training$fitted)
 })
 
-test_that("residuals work with x/y/symbol interface for mqbm", {
+test_that("residuals work with x/y/multiplexer interface for mqbm", {
   set.seed(123)
   x <- matrix(rnorm(200), ncol = 2)
   y <- x[, 1] * 0.5 + rnorm(100)
-  symbol <- sample(c("A", "B"), 100, replace = TRUE)
+  cluster <- sample(c("A", "B"), 100, replace = TRUE)
   
-  fit <- mqbm(x = x, y = y, symbol = symbol, tau = 0.5, nrounds = 20, nfolds = 2)
+  fit <- mqbm(x = x, y = y, cluster = cluster, multiplexer = "cluster", tau = 0.5, nrounds = 20, nfolds = 2)
   
   resid <- residuals(fit)
   fitted_vals <- fitted(fit, type = "surface")

@@ -18,7 +18,7 @@ val_idx <- 71:100
 
 # Fit with train/val split
 fit_split <- qbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 50,
-                  train_idx = train_idx, val_idx = val_idx)
+                 train_idx = train_idx, val_idx = val_idx)
 
 cat("Fold type:", fit_split$cv_settings$fold_type, "\n")
 cat("Training set size:", length(fit_split$cv_settings$train_idx), "\n")

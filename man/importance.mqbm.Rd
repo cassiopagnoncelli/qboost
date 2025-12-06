@@ -14,26 +14,26 @@
 \value{
 A tibble with columns:
 \item{feature}{Feature name}
-\item{gain}{Average information gain across all symbol models}
-\item{sd_gain}{Standard deviation of information gain across symbols}
-\item{n_models}{Number of symbol models where this feature appears}
+\item{gain}{Average information gain across all group models}
+\item{sd_gain}{Standard deviation of information gain across groups}
+\item{n_models}{Number of group models where this feature appears}
 }
 \description{
-Aggregates feature importance across all symbol-specific qbm models.
+Aggregates feature importance across all group-specific qbm models.
 Returns the mean and standard deviation of information gain for each feature,
 ranked by mean gain.
 }
 \details{
 For each feature, this function:
 \enumerate{
-\item Extracts feature importance from each symbol-specific qbm model
-\item Computes the mean information gain across all symbols
+\item Extracts feature importance from each group-specific qbm model
+\item Computes the mean information gain across all groups
 \item Computes the standard deviation of information gain
-\item Counts how many symbol models use this feature
+\item Counts how many group models use this feature
 }
 
 Features are ranked by mean information gain in descending order.
-Features that don't appear in all symbol models will have their gain
+Features that don't appear in all group models will have their gain
 treated as 0 for those models when computing statistics.
 }
 \examples{
@@ -43,11 +43,11 @@ df <- data.frame(
   x1 = rnorm(200),
   x2 = rnorm(200),
   x3 = rnorm(200),
-  symbol = sample(c("A", "B", "C"), 200, replace = TRUE)
+  cluster = sample(c("A", "B", "C"), 200, replace = TRUE)
 )
 df$y <- df$x1 * 0.5 + df$x2 * 0.3 + rnorm(200)
 
-fit <- mqbm(y ~ x1 + x2 + x3, data = df, tau = 0.5, nrounds = 50)
+fit <- mqbm(y ~ x1 + x2 + x3, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 50)
 
 # Get aggregated feature importance
 importance(fit)

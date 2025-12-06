@@ -12,10 +12,10 @@
 \item{...}{Additional arguments (unused).}
 }
 \value{
-A data.frame with GPD parameters (xi, beta) for each symbol.
+A data.frame with GPD parameters (xi, beta) for each multiplexer value.
 }
 \description{
-Returns the Generalized Pareto Distribution (GPD) parameters for each symbol.
+Returns the Generalized Pareto Distribution (GPD) parameters for each multiplexer value.
 }
 \seealso{
 \code{\link{mqtail}}, \code{\link{tail_params.qtail}}

@@ -2,7 +2,7 @@
 % Please edit documentation in R/print.mqtail.R
 \name{print.mqtail}
 \alias{print.mqtail}
-\title{Print method for mqtail}
+\title{Print method for mqtail``}
 \usage{
 \method{print}{mqtail}(x, ...)
 }
@@ -15,5 +15,5 @@
 The input object, invisibly.
 }
 \description{
-Print method for mqtail
+Print method for mqtail``
 }

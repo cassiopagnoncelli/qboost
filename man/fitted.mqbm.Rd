@@ -21,6 +21,6 @@ If \code{type = "surface"}, returns raw quantile values. If \code{type = "quanti
 returns ECDF-transformed probabilities (0-1 range).
 }
 \description{
-Returns the fitted values from training for each symbol-specific model.
+Returns the fitted values from training for each group-specific model.
 Can return either raw quantile predictions or ECDF-transformed probabilities.
 }

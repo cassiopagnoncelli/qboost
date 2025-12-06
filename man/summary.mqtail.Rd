@@ -15,7 +15,7 @@
 An object of class \code{mqtail_summary}.
 }
 \description{
-Aggregates performance metrics across all symbol-specific models.
+Aggregates performance metrics across all group-specific models.
 }
 \seealso{
 \code{\link{mqtail}}, \code{\link{summary.qtail}}

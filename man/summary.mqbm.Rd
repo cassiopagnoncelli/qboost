@@ -10,7 +10,7 @@
 \item{object}{A fitted mqbm model object returned by \code{\link{mqbm}}.}
 
 \item{detailed}{Logical; if TRUE, print extended diagnostics including
-per-symbol breakdowns. Default is TRUE.}
+per-value breakdowns. Default is TRUE.}
 
 \item{top_features}{Integer; number of top features to show in importance table.
 Default is 10.}
@@ -20,22 +20,22 @@ Default is 10.}
 \value{
 An object of class \code{mqbm_summary} containing:
 \item{tau}{Target quantile level}
-\item{multi}{Multiplexer column name used}
-\item{n_symbols}{Number of symbols/groups}
-\item{symbols}{Vector of symbol names}
+\item{multiplexer}{Multiplexer column name used}
+\item{n_values}{Number of values}
+\item{multiplexer_values}{Vector of multiplexer value identifiers}
 \item{data_info}{Dataset dimensions}
 \item{metrics}{Aggregated training metrics}
 \item{calibration}{Aggregated calibration metrics}
 \item{complexity}{Model complexity metrics}
-\item{symbol_table}{Per-symbol summary table}
+\item{value_table}{Per-value summary table}
 \item{importance}{Feature importance (from importance.mqbm)}
 \item{timings}{Training time information}
 \item{detailed}{Whether detailed output was requested}
 \item{top_features}{Number of features to display}
 }
 \description{
-Aggregates performance metrics across all symbol-specific models and provides
-both overall and per-symbol diagnostics.
+Aggregates performance metrics across all multiplexer values and provides
+both overall and per-value diagnostics.
 }
 \examples{
 \dontrun{
@@ -43,11 +43,11 @@ both overall and per-symbol diagnostics.
 df <- data.frame(
   x1 = rnorm(200),
   x2 = rnorm(200),
-  symbol = sample(c("A", "B", "C"), 200, replace = TRUE)
+  cluster = sample(c("A", "B", "C"), 200, replace = TRUE)
 )
 df$y <- df$x1 * 0.5 + rnorm(200)
 
-fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 50)
+fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 50)
 
 # Get summary
 summary(fit)

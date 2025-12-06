@@ -2,23 +2,17 @@
 % Please edit documentation in R/fitted.mqtail.R
 \name{fitted.mqtail}
 \alias{fitted.mqtail}
-\title{Fitted values method for mqtail}
+\title{Fitted values from mqtail model}
 \usage{
 \method{fitted}{mqtail}(object, type = c("surface", "quantile"), ...)
 }
 \arguments{
-\item{object}{A mqtail object}
+\item{object}{A fitted mqtail model}
 
-\item{type}{Character string specifying the type of fitted values. Either \code{"surface"}
-for raw quantile predictions (default) or \code{"quantile"} for ECDF-transformed
-probabilities.}
+\item{type}{Either "surface" (default) or "quantile"}
 
 \item{...}{Additional arguments (not used)}
 }
-\value{
-Numeric vector of fitted values in the original training data order.
-}
 \description{
-Returns the fitted values from training for each symbol-specific model.
-Can return either raw quantile predictions or ECDF-transformed probabilities.
+Fitted values from mqtail model
 }

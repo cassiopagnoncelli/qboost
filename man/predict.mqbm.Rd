@@ -2,13 +2,12 @@
 % Please edit documentation in R/predict.mqbm.R
 \name{predict.mqbm}
 \alias{predict.mqbm}
-\title{Predict quantiles from a symbol-based mqbm model}
+\title{Predict quantiles from a multiplexed mqbm model}
 \usage{
 \method{predict}{mqbm}(
   object,
   newdata,
-  multi = NULL,
-  symbol = NULL,
+  multiplexer = NULL,
   type = c("surface", "quantile"),
   ...
 )
@@ -17,17 +16,14 @@
 \item{object}{A fitted mqbm model object returned by \code{\link{mqbm}}.}
 
 \item{newdata}{A data.frame or matrix of predictor variables. Must either
-contain a column with the name specified by \code{object$multi} (default \code{"symbol"})
-identifying which model to use for each observation, or \code{multi} must be provided
+contain a column with the name specified by \code{object$multiplexer}
+identifying which model to use for each observation, or \code{multiplexer} must be provided
 as a separate argument.}
 
-\item{multi}{Optional character vector specifying which symbol-specific model
+\item{multiplexer}{Optional character vector specifying which group-specific model
 to use for each row of \code{newdata}. If \code{NULL} (default), the
-function looks for a column named \code{object$multi} in \code{newdata}.
-For backward compatibility, also accepts \code{symbol} as an argument name.
-Must contain only symbols that were present in the training data.}
-
-\item{symbol}{Deprecated. Use \code{multi} instead. Kept for backward compatibility.}
+function looks for a column named \code{object$multiplexer} in \code{newdata}.
+Must contain only groups that were present in the training data.}
 
 \item{type}{Character string specifying the type of prediction. Either \code{"surface"}
 for raw quantile predictions (default) or \code{"quantile"} for ECDF-transformed
@@ -37,58 +33,58 @@ probabilities.}
 }
 \value{
 A numeric vector of length \code{nrow(newdata)} containing predictions.
-If \code{type = "surface"}, returns raw quantile values from the symbol-specific
+If \code{type = "surface"}, returns raw quantile values from the group-specific
 models. If \code{type = "quantile"}, returns ECDF-transformed probabilities (0-1 range)
-representing the empirical percentile within each symbol's training distribution.
+representing the empirical percentile within each group's training distribution.
 }
 \description{
-Routes predictions to the appropriate symbol-specific \code{\link{qbm}} model
-based on the symbol identifier for each observation. Each raw prediction from the
-quantile regression model is transformed through the symbol-specific empirical
+Routes predictions to the appropriate group-specific \code{\link{qbm}} model
+based on the group identifier for each observation. Each raw prediction from the
+quantile regression model is transformed through the group-specific empirical
 cumulative distribution function (ECDF) to return probabilities instead of raw values.
 }
 \details{
 The prediction process:
 \enumerate{
-\item Extract or validate symbol identifiers for each observation
-\item Verify all symbols exist in the trained models
-\item Route each observation to its symbol-specific \code{\link{qbm}} model
-\item Transform raw predictions through symbol-specific ECDF to get probabilities
+\item Extract or validate group identifiers for each observation
+\item Verify all groups exist in the trained models
+\item Route each observation to its group-specific \code{\link{qbm}} model
+\item Transform raw predictions through group-specific ECDF to get probabilities
 \item Combine predictions maintaining original row order
 }
 
-Symbols in \code{newdata} must match those used during training. Unknown
-symbols will trigger an error with a list of available symbols.
+Groups in \code{newdata} must match those used during training. Unknown
+groups will trigger an error with a list of available groups.
 }
 \examples{
 \dontrun{
-# Train multi-symbol model
+# Train multi-group model
 df <- data.frame(
   x1 = rnorm(200),
   x2 = rnorm(200),
-  symbol = sample(c("A", "B", "C"), 200, replace = TRUE)
+  cluster = sample(c("A", "B", "C"), 200, replace = TRUE)
 )
 df$y <- df$x1 * 0.5 + rnorm(200)
-fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 50)
+fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 50)
 
-# Method 1: Symbol in newdata
-newdata_with_symbol <- data.frame(
+# Method 1: Group in newdata
+newdata_with_group <- data.frame(
   x1 = c(0, 1, -1),
   x2 = c(0, 0, 1),
-  symbol = c("A", "B", "A")
+  cluster = c("A", "B", "A")
 )
-predict(fit, newdata_with_symbol)
+predict(fit, newdata_with_group)
 
-# Method 2: Symbol as separate argument
-newdata_no_symbol <- data.frame(
+# Method 2: Group as separate argument
+newdata_no_group <- data.frame(
   x1 = c(0, 1, -1),
   x2 = c(0, 0, 1)
 )
-symbols <- c("A", "B", "C")
-predict(fit, newdata_no_symbol, symbol = symbols)
+groups <- c("A", "B", "C")
+predict(fit, newdata_no_group, multiplexer = groups)
 
-# Predictions automatically use correct symbol-specific model
-# Each row gets prediction from its designated symbol model
+# Predictions automatically use correct group-specific model
+# Each row gets prediction from its designated group model
 }
 
 }

@@ -12,12 +12,12 @@
 \item{...}{Additional arguments (currently unused).}
 }
 \value{
-A named list of tibbles, one per symbol, containing feature importances
-for each symbol-specific model. Returns \code{NULL} if feature importance
+A named list of tibbles, one per group, containing feature importances
+for each group-specific model. Returns \code{NULL} if feature importance
 is not available.
 }
 \description{
-Returns feature importance for each symbol-specific model within the mqbm object.
+Returns feature importance for each group-specific model within the mqbm object.
 }
 \seealso{
 \code{\link{mqbm}}, \code{\link{coef.qbm}}

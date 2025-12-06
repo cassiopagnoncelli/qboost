@@ -3,66 +3,67 @@ test_that("mqbm works with formula interface", {
   df <- data.frame(
     x1 = rnorm(200),
     x2 = rnorm(200),
-    symbol = sample(c("A", "B", "C"), 200, replace = TRUE)
+    cluster = sample(c("A", "B", "C"), 200, replace = TRUE)
   )
   df$y <- df$x1 * 0.5 + rnorm(200)
   
   # Test formula interface
-  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 20, nfolds = 2)
+  fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 20, nfolds = 2)
   
   expect_s3_class(fit, "mqbm")
-  expect_equal(length(fit$symbols), 3)
-  expect_true(all(c("A", "B", "C") %in% fit$symbols))
+  expect_equal(length(fit$multiplexer_values), 3)
+  expect_true(all(c("A", "B", "C") %in% fit$multiplexer_values))
   expect_equal(fit$data_info$n, 200)
   expect_equal(fit$tau, 0.5)
   
   # Each model should be a qbm
-  for (sym in fit$symbols) {
-    expect_s3_class(fit$models[[sym]], "qbm")
+  for (val in fit$multiplexer_values) {
+    expect_s3_class(fit$models[[val]], "qbm")
   }
 })
 
-test_that("mqbm works with x/y/symbol interface", {
+test_that("mqbm works with x/y/multiplexer interface", {
   set.seed(123)
   df <- data.frame(
     x1 = rnorm(200),
     x2 = rnorm(200),
-    symbol = sample(c("A", "B"), 200, replace = TRUE)
+    cluster = sample(c("A", "B"), 200, replace = TRUE)
   )
   df$y <- df$x1 * 0.5 + rnorm(200)
   
-  # Test x/y/symbol interface
+  # Test x/y/multiplexer interface
   fit <- mqbm(
     x = df[, c("x1", "x2")],
     y = df$y,
-    symbol = df$symbol,
+    cluster = df$cluster,
+    multiplexer = "cluster",
     tau = 0.3,
     nrounds = 20,
     nfolds = 2
   )
   
   expect_s3_class(fit, "mqbm")
-  expect_equal(length(fit$symbols), 2)
-  expect_true(all(c("A", "B") %in% fit$symbols))
+  expect_equal(length(fit$multiplexer_values), 2)
+  expect_true(all(c("A", "B") %in% fit$multiplexer_values))
   expect_equal(fit$tau, 0.3)
 })
 
-test_that("predict.mqbm works with symbol in newdata", {
+test_that("predict.mqbm works with multiplexer in newdata", {
   set.seed(123)
   df <- data.frame(
     x1 = rnorm(200),
     x2 = rnorm(200),
-    symbol = sample(c("A", "B"), 200, replace = TRUE)
+    cluster = sample(c("A", "B"), 200, replace = TRUE)
   )
   df$y <- df$x1 * 0.5 + rnorm(200)
   
-  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 20, nfolds = 2)
+  fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 20, nfolds = 2)
   
-  # Create new data with symbol column
+  # Create new data with multiplexer column
   newdata <- data.frame(
     x1 = rnorm(50),
     x2 = rnorm(50),
-    symbol = sample(c("A", "B"), 50, replace = TRUE)
+    cluster = sample(c("A", "B"), 50, replace = TRUE)
   )
   
   preds <- predict(fit, newdata)
@@ -72,50 +73,50 @@ test_that("predict.mqbm works with symbol in newdata", {
   expect_false(any(is.na(preds)))
 })
 
-test_that("predict.mqbm works with separate symbol argument", {
+test_that("predict.mqbm works with separate multiplexer argument", {
   set.seed(123)
   df <- data.frame(
     x1 = rnorm(200),
     x2 = rnorm(200),
-    symbol = sample(c("A", "B"), 200, replace = TRUE)
+    cluster = sample(c("A", "B"), 200, replace = TRUE)
   )
   df$y <- df$x1 * 0.5 + rnorm(200)
   
-  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 20, nfolds = 2)
+  fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 20, nfolds = 2)
   
-  # Create new data without symbol column
+  # Create new data without multiplexer column
   newdata <- data.frame(
     x1 = rnorm(50),
     x2 = rnorm(50)
   )
-  symbols <- sample(c("A", "B"), 50, replace = TRUE)
+  clusters <- sample(c("A", "B"), 50, replace = TRUE)
   
-  preds <- predict(fit, newdata, symbol = symbols)
+  preds <- predict(fit, newdata, multiplexer = clusters)
   
   expect_length(preds, 50)
   expect_type(preds, "double")
   expect_false(any(is.na(preds)))
 })
 
-test_that("predict.mqbm errors on unknown symbols", {
+test_that("predict.mqbm errors on unknown values", {
   set.seed(123)
   df <- data.frame(
     x1 = rnorm(200),
     x2 = rnorm(200),
-    symbol = sample(c("A", "B"), 200, replace = TRUE)
+    cluster = sample(c("A", "B"), 200, replace = TRUE)
   )
   df$y <- df$x1 * 0.5 + rnorm(200)
   
-  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 20, nfolds = 2)
+  fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 20, nfolds = 2)
   
-  # Try to predict with unknown symbol
+  # Try to predict with unknown value
   newdata <- data.frame(
     x1 = rnorm(10),
     x2 = rnorm(10),
-    symbol = rep("C", 10)  # "C" was not in training data
+    cluster = rep("C", 10)  # "C" was not in training data
   )
   
-  expect_error(predict(fit, newdata), "Unknown symbols")
+  expect_error(predict(fit, newdata), "Unknown")
 })
 
 test_that("fitted.mqbm returns correct length", {
@@ -123,11 +124,11 @@ test_that("fitted.mqbm returns correct length", {
   df <- data.frame(
     x1 = rnorm(200),
     x2 = rnorm(200),
-    symbol = sample(c("A", "B", "C"), 200, replace = TRUE)
+    cluster = sample(c("A", "B", "C"), 200, replace = TRUE)
   )
   df$y <- df$x1 * 0.5 + rnorm(200)
   
-  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 20, nfolds = 2)
+  fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 20, nfolds = 2)
   
   fitted_vals <- fitted(fit)
   
@@ -141,18 +142,18 @@ test_that("print.mqbm works without error", {
   df <- data.frame(
     x1 = rnorm(100),
     x2 = rnorm(100),
-    symbol = sample(c("A", "B"), 100, replace = TRUE)
+    cluster = sample(c("A", "B"), 100, replace = TRUE)
   )
   df$y <- df$x1 * 0.5 + rnorm(100)
   
-  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 20, nfolds = 2)
+  fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 20, nfolds = 2)
   
   # Should not error
-  expect_output(print(fit), "Symbol-based Quantile Gradient Boosting Model")
-  expect_output(print(fit), "Symbols:")
+  expect_output(print(fit), "Multiplexed Quantile Gradient Boosting Model")
+  expect_output(print(fit), "Values:")
 })
 
-test_that("mqbm errors when symbol column missing in formula interface", {
+test_that("mqbm errors when multiplexer column missing in formula interface", {
   df <- data.frame(
     x1 = rnorm(100),
     x2 = rnorm(100)
@@ -160,23 +161,23 @@ test_that("mqbm errors when symbol column missing in formula interface", {
   df$y <- df$x1 * 0.5 + rnorm(100)
   
   expect_error(
-    mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 20),
-    "must contain a 'symbol' column"
+    mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 20),
+    "must contain a 'cluster' column"
   )
 })
 
-test_that("mqbm works with different tau values per symbol", {
+test_that("mqbm works with different tau values", {
   set.seed(123)
   df <- data.frame(
     x1 = rnorm(200),
     x2 = rnorm(200),
-    symbol = sample(c("A", "B"), 200, replace = TRUE)
+    cluster = sample(c("A", "B"), 200, replace = TRUE)
   )
   df$y <- df$x1 * 0.5 + rnorm(200)
   
   # Test with different tau
-  fit_median <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 20, nfolds = 2)
-  fit_upper <- mqbm(y ~ x1 + x2, data = df, tau = 0.9, nrounds = 20, nfolds = 2)
+  fit_median <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 20, nfolds = 2)
+  fit_upper <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.9, nrounds = 20, nfolds = 2)
   
   expect_equal(fit_median$tau, 0.5)
   expect_equal(fit_upper$tau, 0.9)
@@ -185,7 +186,7 @@ test_that("mqbm works with different tau values per symbol", {
   newdata <- data.frame(
     x1 = rnorm(50),
     x2 = rnorm(50),
-    symbol = sample(c("A", "B"), 50, replace = TRUE)
+    cluster = sample(c("A", "B"), 50, replace = TRUE)
   )
   
   preds_median <- predict(fit_median, newdata)
@@ -194,94 +195,31 @@ test_that("mqbm works with different tau values per symbol", {
   expect_false(all(preds_median == preds_upper))
 })
 
-test_that("mqbm works with custom multi parameter", {
+test_that("mqbm works with custom multiplexer parameter", {
   set.seed(123)
   df <- data.frame(
     x1 = rnorm(200),
     x2 = rnorm(200),
-    group = sample(c("Group1", "Group2", "Group3"), 200, replace = TRUE)
+    category = sample(c("Cat1", "Cat2", "Cat3"), 200, replace = TRUE)
   )
   df$y <- df$x1 * 0.5 + rnorm(200)
   
-  # Test with custom multi column name
-  fit <- mqbm(y ~ x1 + x2, data = df, multi = "group", tau = 0.5, nrounds = 20, nfolds = 2)
+  # Test with custom multiplexer column name
+  fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "category", tau = 0.5, nrounds = 20, nfolds = 2)
   
   expect_s3_class(fit, "mqbm")
-  expect_equal(fit$multi, "group")
-  expect_equal(length(fit$symbols), 3)
-  expect_true(all(c("Group1", "Group2", "Group3") %in% fit$symbols))
+  expect_equal(fit$multiplexer, "category")
+  expect_equal(length(fit$multiplexer_values), 3)
+  expect_true(all(c("Cat1", "Cat2", "Cat3") %in% fit$multiplexer_values))
   
-  # Prediction should work with group column
+  # Prediction should work with category column
   newdata <- data.frame(
     x1 = rnorm(50),
     x2 = rnorm(50),
-    group = sample(c("Group1", "Group2", "Group3"), 50, replace = TRUE)
+    category = sample(c("Cat1", "Cat2", "Cat3"), 50, replace = TRUE)
   )
   
   preds <- predict(fit, newdata)
-  expect_length(preds, 50)
-  expect_false(any(is.na(preds)))
-})
-
-test_that("mqbm multi parameter works with x/y interface", {
-  set.seed(123)
-  df <- data.frame(
-    x1 = rnorm(200),
-    x2 = rnorm(200),
-    category = sample(c("Cat1", "Cat2"), 200, replace = TRUE)
-  )
-  df$y <- df$x1 * 0.5 + rnorm(200)
-  
-  # Test x/y/category interface (using named argument)
-  fit <- mqbm(
-    x = df[, c("x1", "x2")],
-    y = df$y,
-    category = df$category,
-    multi = "category",
-    tau = 0.5,
-    nrounds = 20,
-    nfolds = 2
-  )
-  
-  expect_s3_class(fit, "mqbm")
-  expect_equal(fit$multi, "category")
-  expect_equal(length(fit$symbols), 2)
-  
-  # Prediction with multi argument
-  newdata <- data.frame(
-    x1 = rnorm(50),
-    x2 = rnorm(50)
-  )
-  categories <- sample(c("Cat1", "Cat2"), 50, replace = TRUE)
-  
-  preds <- predict(fit, newdata, multi = categories)
-  expect_length(preds, 50)
-  expect_false(any(is.na(preds)))
-})
-
-test_that("mqbm backward compatibility with symbol parameter", {
-  set.seed(123)
-  df <- data.frame(
-    x1 = rnorm(200),
-    x2 = rnorm(200),
-    symbol = sample(c("A", "B"), 200, replace = TRUE)
-  )
-  df$y <- df$x1 * 0.5 + rnorm(200)
-  
-  # Should still work without specifying multi (defaults to "symbol")
-  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 20, nfolds = 2)
-  
-  expect_s3_class(fit, "mqbm")
-  expect_equal(fit$multi, "symbol")
-  
-  # Prediction should work with symbol argument (backward compatibility)
-  newdata <- data.frame(
-    x1 = rnorm(50),
-    x2 = rnorm(50)
-  )
-  symbols <- sample(c("A", "B"), 50, replace = TRUE)
-  
-  preds <- predict(fit, newdata, symbol = symbols)
   expect_length(preds, 50)
   expect_false(any(is.na(preds)))
 })
@@ -292,11 +230,11 @@ test_that("importance.mqbm returns aggregated importance", {
     x1 = rnorm(200),
     x2 = rnorm(200),
     x3 = rnorm(200),
-    symbol = sample(c("A", "B", "C"), 200, replace = TRUE)
+    cluster = sample(c("A", "B", "C"), 200, replace = TRUE)
   )
   df$y <- df$x1 * 0.8 + df$x2 * 0.3 + rnorm(200)
   
-  fit <- mqbm(y ~ x1 + x2 + x3, data = df, tau = 0.5, nrounds = 30, nfolds = 2)
+  fit <- mqbm(y ~ x1 + x2 + x3, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 30, nfolds = 2)
   
   imp <- importance(fit)
   
@@ -317,8 +255,8 @@ test_that("importance.mqbm returns aggregated importance", {
   expect_true(all(imp$gain >= 0))
   expect_true(all(imp$sd_gain >= 0, na.rm = TRUE))
   
-  # n_models should be between 1 and number of symbols
-  expect_true(all(imp$n_models >= 1 & imp$n_models <= length(fit$symbols)))
+  # n_models should be between 1 and number of values
+  expect_true(all(imp$n_models >= 1 & imp$n_models <= length(fit$multiplexer_values)))
 })
 
 test_that("importance.mqbm handles features present in subset of models", {
@@ -326,11 +264,11 @@ test_that("importance.mqbm handles features present in subset of models", {
   df <- data.frame(
     x1 = rnorm(200),
     x2 = rnorm(200),
-    symbol = sample(c("A", "B"), 200, replace = TRUE)
+    cluster = sample(c("A", "B"), 200, replace = TRUE)
   )
   df$y <- df$x1 * 0.5 + rnorm(200)
   
-  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 30, nfolds = 2)
+  fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 30, nfolds = 2)
   
   imp <- importance(fit)
   
@@ -341,57 +279,39 @@ test_that("importance.mqbm handles features present in subset of models", {
   expect_false(any(is.na(imp$gain)))
 })
 
-test_that("importance.mqbm works with custom multi parameter", {
-  set.seed(123)
-  df <- data.frame(
-    x1 = rnorm(200),
-    x2 = rnorm(200),
-    group = sample(c("G1", "G2"), 200, replace = TRUE)
-  )
-  df$y <- df$x1 * 0.5 + rnorm(200)
-  
-  fit <- mqbm(y ~ x1 + x2, data = df, multi = "group", tau = 0.5, nrounds = 30, nfolds = 2)
-  
-  imp <- importance(fit)
-  
-  expect_s3_class(imp, "tbl_df")
-  expect_gt(nrow(imp), 0)
-  expect_true(all(c("feature", "gain", "sd_gain", "n_models") %in% names(imp)))
-})
-
 test_that("summary.mqbm returns correct structure", {
   set.seed(123)
   df <- data.frame(
     x1 = rnorm(200),
     x2 = rnorm(200),
-    symbol = sample(c("A", "B", "C"), 200, replace = TRUE)
+    cluster = sample(c("A", "B", "C"), 200, replace = TRUE)
   )
   df$y <- df$x1 * 0.8 + df$x2 * 0.3 + rnorm(200)
   
-  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 30, nfolds = 2)
+  fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 30, nfolds = 2)
   summ <- summary(fit)
   
   # Check class
   expect_s3_class(summ, "mqbm_summary")
   
   # Check required components
-  expect_true(all(c("tau", "multi", "n_symbols", "symbols", "data_info", 
-                    "metrics", "calibration", "complexity", "symbol_table", 
+  expect_true(all(c("tau", "multiplexer", "n_values", "multiplexer_values", "data_info", 
+                    "metrics", "calibration", "complexity", "value_table", 
                     "importance", "timings") %in% names(summ)))
   
   # Check metrics structure
   expect_true("overall" %in% names(summ$metrics))
-  expect_true("per_symbol" %in% names(summ$metrics))
+  expect_true("per_value" %in% names(summ$metrics))
   expect_true(all(c("pinball_loss", "mae", "pseudo_r2") %in% names(summ$metrics$overall)))
   
   # Check calibration structure
   expect_true(all(c("overall_coverage", "overall_qce", "coverage_sd") %in% names(summ$calibration)))
   
-  # Check symbol table
-  expect_s3_class(summ$symbol_table, "tbl_df")
-  expect_equal(nrow(summ$symbol_table), 3)
-  expect_true(all(c("symbol", "n", "trees", "train_pinball", "train_mae", "train_r2", 
-                    "train_cov", "train_qce") %in% names(summ$symbol_table)))
+  # Check value table
+  expect_s3_class(summ$value_table, "tbl_df")
+  expect_equal(nrow(summ$value_table), 3)
+  expect_true(all(c("value", "n", "trees", "train_pinball", "train_mae", "train_r2", 
+                    "train_cov", "train_qce") %in% names(summ$value_table)))
 })
 
 test_that("summary.mqbm computes aggregate metrics correctly", {
@@ -399,11 +319,11 @@ test_that("summary.mqbm computes aggregate metrics correctly", {
   df <- data.frame(
     x1 = rnorm(200),
     x2 = rnorm(200),
-    symbol = sample(c("A", "B"), 200, replace = TRUE)
+    cluster = sample(c("A", "B"), 200, replace = TRUE)
   )
   df$y <- df$x1 * 0.5 + rnorm(200)
   
-  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 30, nfolds = 2)
+  fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 30, nfolds = 2)
   summ <- summary(fit)
   
   # Aggregate metrics should be computed
@@ -411,14 +331,14 @@ test_that("summary.mqbm computes aggregate metrics correctly", {
   expect_false(is.na(summ$metrics$overall$mae))
   expect_false(is.na(summ$metrics$overall$pseudo_r2))
   
-  # Per-symbol metrics should exist for each symbol
-  expect_equal(length(summ$metrics$per_symbol), 2)
-  expect_true(all(c("A", "B") %in% names(summ$metrics$per_symbol)))
+  # Per-value metrics should exist for each value
+  expect_equal(length(summ$metrics$per_value), 2)
+  expect_true(all(c("A", "B") %in% names(summ$metrics$per_value)))
   
-  # Each symbol should have all metrics
-  for (sym in c("A", "B")) {
+  # Each value should have all metrics
+  for (val in c("A", "B")) {
     expect_true(all(c("n", "pinball", "mae", "pseudo_r2", "coverage", "qce") %in% 
-                      names(summ$metrics$per_symbol[[sym]])))
+                      names(summ$metrics$per_value[[val]])))
   }
 })
 
@@ -427,39 +347,22 @@ test_that("print.mqbm_summary works without error", {
   df <- data.frame(
     x1 = rnorm(200),
     x2 = rnorm(200),
-    symbol = sample(c("A", "B"), 200, replace = TRUE)
+    cluster = sample(c("A", "B"), 200, replace = TRUE)
   )
   df$y <- df$x1 * 0.5 + rnorm(200)
   
-  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 30, nfolds = 2)
+  fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 30, nfolds = 2)
   
   # Detailed summary
   summ_detailed <- summary(fit, detailed = TRUE)
-  expect_output(print(summ_detailed), "Multi Quantile Gradient Boosting Model")
+  expect_output(print(summ_detailed), "Multiplexed Quantile Gradient Boosting Model")
   expect_output(print(summ_detailed), "Aggregate Training Metrics")
-  expect_output(print(summ_detailed), "Per-Symbol Summary")
+  expect_output(print(summ_detailed), "Per-Value Summary")
   
   # Compact summary
   summ_compact <- summary(fit, detailed = FALSE)
-  expect_output(print(summ_compact), "Multi Quantile Gradient Boosting Model")
+  expect_output(print(summ_compact), "Multiplexed Quantile Gradient Boosting Model")
   expect_output(print(summ_compact), "Use detailed = TRUE for full report")
-})
-
-test_that("summary.mqbm works with custom multi parameter", {
-  set.seed(123)
-  df <- data.frame(
-    x1 = rnorm(200),
-    x2 = rnorm(200),
-    category = sample(c("Cat1", "Cat2"), 200, replace = TRUE)
-  )
-  df$y <- df$x1 * 0.5 + rnorm(200)
-  
-  fit <- mqbm(y ~ x1 + x2, data = df, multi = "category", tau = 0.5, nrounds = 30, nfolds = 2)
-  summ <- summary(fit)
-  
-  expect_s3_class(summ, "mqbm_summary")
-  expect_equal(summ$multi, "category")
-  expect_equal(summ$n_symbols, 2)
 })
 
 test_that("predict.mqbm type='surface' returns raw quantile values", {
@@ -467,16 +370,16 @@ test_that("predict.mqbm type='surface' returns raw quantile values", {
   df <- data.frame(
     x1 = rnorm(200),
     x2 = rnorm(200),
-    symbol = sample(c("A", "B"), 200, replace = TRUE)
+    cluster = sample(c("A", "B"), 200, replace = TRUE)
   )
   df$y <- df$x1 * 0.5 + rnorm(200)
   
-  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 20, nfolds = 2)
+  fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 20, nfolds = 2)
   
   newdata <- data.frame(
     x1 = rnorm(50),
     x2 = rnorm(50),
-    symbol = sample(c("A", "B"), 50, replace = TRUE)
+    cluster = sample(c("A", "B"), 50, replace = TRUE)
   )
   
   preds_surface <- predict(fit, newdata, type = "surface")
@@ -492,16 +395,16 @@ test_that("predict.mqbm type='quantile' returns ECDF probabilities", {
   df <- data.frame(
     x1 = rnorm(200),
     x2 = rnorm(200),
-    symbol = sample(c("A", "B"), 200, replace = TRUE)
+    cluster = sample(c("A", "B"), 200, replace = TRUE)
   )
   df$y <- df$x1 * 0.5 + rnorm(200)
   
-  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 20, nfolds = 2)
+  fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 20, nfolds = 2)
   
   newdata <- data.frame(
     x1 = rnorm(50),
     x2 = rnorm(50),
-    symbol = sample(c("A", "B"), 50, replace = TRUE)
+    cluster = sample(c("A", "B"), 50, replace = TRUE)
   )
   
   preds_quantile <- predict(fit, newdata, type = "quantile")
@@ -517,11 +420,11 @@ test_that("fitted.mqbm type='surface' returns raw fitted values", {
   df <- data.frame(
     x1 = rnorm(200),
     x2 = rnorm(200),
-    symbol = sample(c("A", "B"), 200, replace = TRUE)
+    cluster = sample(c("A", "B"), 200, replace = TRUE)
   )
   df$y <- df$x1 * 0.5 + rnorm(200)
   
-  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 20, nfolds = 2)
+  fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 20, nfolds = 2)
   
   fitted_surface <- fitted(fit, type = "surface")
   
@@ -536,11 +439,11 @@ test_that("fitted.mqbm type='quantile' returns ECDF probabilities", {
   df <- data.frame(
     x1 = rnorm(200),
     x2 = rnorm(200),
-    symbol = sample(c("A", "B"), 200, replace = TRUE)
+    cluster = sample(c("A", "B"), 200, replace = TRUE)
   )
   df$y <- df$x1 * 0.5 + rnorm(200)
   
-  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 20, nfolds = 2)
+  fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 20, nfolds = 2)
   
   fitted_quantile <- fitted(fit, type = "quantile")
   
@@ -555,16 +458,16 @@ test_that("type parameter defaults to 'surface' for backward compatibility", {
   df <- data.frame(
     x1 = rnorm(200),
     x2 = rnorm(200),
-    symbol = sample(c("A", "B"), 200, replace = TRUE)
+    cluster = sample(c("A", "B"), 200, replace = TRUE)
   )
   df$y <- df$x1 * 0.5 + rnorm(200)
   
-  fit <- mqbm(y ~ x1 + x2, data = df, tau = 0.5, nrounds = 20, nfolds = 2)
+  fit <- mqbm(y ~ x1 + x2, data = df, multiplexer = "cluster", tau = 0.5, nrounds = 20, nfolds = 2)
   
   newdata <- data.frame(
     x1 = rnorm(20),
     x2 = rnorm(20),
-    symbol = sample(c("A", "B"), 20, replace = TRUE)
+    cluster = sample(c("A", "B"), 20, replace = TRUE)
   )
   
   # Without specifying type, should default to "surface"

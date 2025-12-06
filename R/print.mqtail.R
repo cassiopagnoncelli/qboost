@@ -20,7 +20,10 @@ print.mqtail <- function(x, ...) {
   cat(" Threshold tau:    ", format(x$threshold_tau, digits = 4), "\n", sep = "")
   cat(" Taus:             ", paste(format(x$taus, digits = 3), collapse = ", "), "\n", sep = "")
   cat(" Multiplexer:      ", multiplexer_name, "\n", sep = "")
-  cat(" Values:           ", length(x$multiplexer_values), " (", paste(x$multiplexer_values, collapse = ", "), ")\n", sep = "")
+  cat(
+    " Values:           ", length(x$multiplexer_values),
+    " (", paste(x$multiplexer_values, collapse = ", "), ")\n", sep = ""
+  )
 
   cat("\nModels per multiplexer value:\n")
   for (val in x$multiplexer_values) {

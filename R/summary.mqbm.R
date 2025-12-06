@@ -156,8 +156,8 @@
 #' @keywords internal
 .compute_value_table <- function(mqbm_object, metrics_list, calibration_list) {
   # Check if validation metrics are available
-  has_validation <- !is.null(metrics_list$validation_per_value) && 
-                    length(metrics_list$validation_per_value) > 0
+  has_validation <- !is.null(metrics_list$validation_per_value) &&
+    length(metrics_list$validation_per_value) > 0
   
   value_rows <- lapply(mqbm_object$multiplexer_values, function(val) {
     m <- metrics_list$per_value[[val]]

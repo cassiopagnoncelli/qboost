@@ -229,7 +229,10 @@ mqbm <- function(
 .parse_mqbm_inputs <- function(dots, multiplexer) {
   if (length(dots) == 0) {
     stop(
-      sprintf("Provide either a formula with data (containing '%s' column) or an `x`/`y`/`%s` triplet.", multiplexer, multiplexer),
+      sprintf(
+        "Provide either a formula with data (containing '%s' column) or an `x`/`y`/`%s` triplet.",
+        multiplexer, multiplexer
+      ),
       call. = FALSE
     )
   }
@@ -304,7 +307,10 @@ mqbm <- function(
   x_idx <- if ("x" %in% nm) which(nm == "x")[1] else 1L
   remaining <- setdiff(seq_along(dots), x_idx)
   if (length(remaining) == 0) {
-    stop(sprintf("`y` and `%s` must be provided when using `x`/`y`/`%s` inputs.", multiplexer, multiplexer), call. = FALSE)
+    stop(
+      sprintf("`y` and `%s` must be provided when using `x`/`y`/`%s` inputs.", multiplexer, multiplexer),
+      call. = FALSE
+    )
   }
   
   y_idx <- if ("y" %in% nm) {

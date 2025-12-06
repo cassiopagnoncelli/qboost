@@ -2,11 +2,11 @@
 % Please edit documentation in R/mqtail.R
 \name{mqtail}
 \alias{mqtail}
-\title{Fit symbol-based (multi-group) extreme tail quantile models}
+\title{Fit multi-group extreme tail quantile models}
 \usage{
 mqtail(
   ...,
-  multi = "symbol",
+  multiplexer,
   taus = NULL,
   tail = c("upper", "lower"),
   threshold_tau = NULL,
@@ -18,53 +18,44 @@ mqtail(
 )
 }
 \arguments{
-\item{...}{Either a formula with \code{data} argument (where \code{data} must
-contain a column specified by \code{multi} identifying groups), or an
-\code{x}/\code{y}/\code{multi} triplet for matrix input.}
+\item{...}{Passed to \code{\link{mqbm}}.}
 
-\item{multi}{Character string specifying the column name in \code{data} (for formula interface)
-or the name of the grouping variable to use as a multiplexer. Default is \code{"symbol"}.}
+\item{multiplexer}{Character string specifying the column name for grouping.
+Passed directly to \code{\link{mqbm}}. Required parameter.}
 
-\item{taus}{Numeric vector of quantile levels to fit with \code{\link{qbm}}.
-If \code{NULL}, defaults based on \code{tail} direction.}
+\item{taus}{Numeric vector of quantile levels. If \code{NULL}, defaults
+based on \code{tail} direction.}
 
-\item{tail}{Character string specifying tail direction: \code{"upper"} or \code{"lower"}.
-Default is \code{"upper"}.}
+\item{tail}{Character string: \code{"upper"} or \code{"lower"}. Default is \code{"upper"}.}
 
-\item{threshold_tau}{Numeric quantile level defining the EVT threshold.
+\item{threshold_tau}{Quantile level for EVT threshold. Must be in \code{taus}.
 If \code{NULL}, defaults to 0.99 for upper tail or 0.01 for lower tail.}
 
-\item{params}{Named list of parameters passed to \code{\link{qtail}} for each symbol.}
+\item{params}{Named list of parameters for \code{\link{qbm}} models.}
 
-\item{verbose}{Logical; if \code{TRUE}, prints progress messages. Default is \code{FALSE}.}
+\item{verbose}{Logical; print progress messages. Default is \code{FALSE}.}
 
-\item{train_idx}{Optional integer vector of training indices (referring to full dataset rows).}
+\item{train_idx}{Optional training indices. Passed to \code{\link{mqbm}}.}
 
-\item{val_idx}{Optional integer vector of validation indices (referring to full dataset rows).}
+\item{val_idx}{Optional validation indices. Passed to \code{\link{mqbm}}.}
 
-\item{folds}{Optional list of integer vectors specifying custom fold structure for CV.}
+\item{folds}{Optional fold structure. Passed to \code{\link{mqbm}}.}
 }
 \value{
-An object of class \code{mqtail} containing:
-\item{models}{Named list of fitted \code{\link{qtail}} objects, one per symbol}
-\item{symbols}{Character vector of unique symbol identifiers}
-\item{symbol_info}{List with sample size and indices for each symbol}
-\item{ecdf_funs}{Named list of ECDF functions, one per symbol}
-\item{taus}{Vector of fitted quantile levels}
+Object of class \code{mqtail} containing:
+\item{mqbm_models}{Named list of \code{\link{mqbm}} objects, one per tau}
+\item{multiplexer_values}{Unique group identifiers from first mqbm model}
+\item{multiplexer_info}{Info per group from first mqbm model}
+\item{evt_models}{GPD parameters per group}
+\item{taus}{Fitted quantile levels}
 \item{tau_target}{Target extreme quantile}
-\item{threshold_tau}{EVT threshold quantile level}
+\item{threshold_tau}{EVT threshold level}
 \item{tail}{Tail direction}
-\item{multi}{Multiplexer column name}
-\item{preprocess}{Preprocessing information}
-\item{timings}{Training time information}
+\item{multiplexer}{Grouping column name}
 \item{data_info}{Dataset dimensions}
-\item{training}{Training data (y and symbol vectors)}
 }
 \description{
-Trains separate \code{\link{qtail}} extreme quantile models for each symbol
-(group/label) in the data. This symbol-based multiplexer enables heterogeneous
-tail modeling where different subgroups can have distinct tail behavior.
-}
-\seealso{
-\code{\link{qtail}}, \code{\link{predict.mqtail}}, \code{\link{fitted.mqtail}}
+Trains multiple \code{\link{mqbm}} quantile models (one per tau), then fits
+GPD tail models per group. This enables extreme quantile prediction with
+heterogeneous tail behavior across groups.
 }
